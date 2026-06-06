@@ -65,14 +65,14 @@ body{
 
 /* Board area */
 .board-container{position:relative;touch-action:none;display:flex;justify-content:center;flex-shrink:0}
-.board-frame{border:2px solid rgba(255,255,255,.2);border-radius:8px;box-shadow:0 0 30px rgba(100,100,255,.12),inset 0 0 30px rgba(0,0,0,.5);background:rgba(0,0,0,.5);contain:layout style}
+.board-frame{border:2px solid rgba(255,255,255,.2);border-radius:8px;box-shadow:0 0 30px rgba(100,100,255,.12),inset 0 0 30px rgba(0,0,0,.5);background:#0a0a18;contain:layout style}
 .board-row{display:flex}
-.board-cell{width:var(--cs);height:var(--cs);border:1px solid rgba(255,255,255,.06);background:rgba(0,0,0,.6);transition:background .12s;cursor:pointer}
-.board-cell.filled{border-color:rgba(255,255,255,.15)}
-.board-cell.preview{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.3)}
-.board-cell.invalid{background:rgba(255,50,50,.3)!important}
+.board-cell{width:var(--cs);height:var(--cs);border:1px solid rgba(255,255,255,.1);background:#0c0c20;transition:background .12s;cursor:pointer}
+.board-cell.filled{border-color:rgba(255,255,255,.25);box-shadow:inset 0 1px 3px rgba(255,255,255,.15),inset 0 -1px 3px rgba(0,0,0,.4)}
+.board-cell.preview{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.45)}
+.board-cell.invalid{background:rgba(255,50,50,.45)!important}
 .board-cell.clearing{animation:flashClear .35s ease-out}
-@keyframes flashClear{0%{background:rgba(255,255,255,.8)}100%{background:rgba(0,0,0,.6)}}
+@keyframes flashClear{0%{background:rgba(255,255,255,.8)}100%{background:#0c0c20}}
 .combo-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#ffd700;font-size:1.5rem;font-weight:bold;pointer-events:none;animation:comboUp .8s ease-out forwards;z-index:10;text-shadow:0 0 10px rgba(255,215,0,.6)}
 @keyframes comboUp{0%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-140%) scale(1.6)}}
 
@@ -207,7 +207,7 @@ function shapeFitsAnywhere(idx){var m=SHAPES[idx];for(var r=0;r<BOARD;r++)for(va
 function pickFittingShape(t){if(!t)t=0;var i=weightedPick();if(t>30)return i;if(!shapeFitsAnywhere(i))return pickFittingShape(t+1);return i;}
 function weightedPick(){var w=MODE_WEIGHTS[gameMode],r=Math.random();if(r<w[0])return SMALL[Math.floor(Math.random()*SMALL.length)];if(r<w[0]+w[1])return MEDIUM[Math.floor(Math.random()*MEDIUM.length)];return LARGE[Math.floor(Math.random()*LARGE.length)];}
 
-var COLORS=['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff922b','#cc5de8','#20c997','#f06595','#ffe066','#5c7cfa','#ff8787','#63e6be','#e599f7','#ffa94d','#74c0fc','#fcc419','#9775fa'];
+var COLORS=['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff922b','#cc5de8','#20c997','#ffe066','#5c7cfa','#ff8787','#63e6be','#e599f7','#ffa94d','#74c0fc','#fcc419','#9775fa'];
 function getColor(idx){return COLORS[idx%COLORS.length];}
 
 // Pages
