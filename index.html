@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="方块消除">
@@ -13,41 +13,43 @@
 <title>方块消除</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden}
 body{
     background:linear-gradient(135deg,#0a0a0a 0%,#1a1a2e 50%,#16213e 100%);
-    min-height:100vh;display:flex;justify-content:center;align-items:center;
     font-family:'Segoe UI','Microsoft YaHei',sans-serif;
     user-select:none;-webkit-user-select:none;
-    overflow-y:auto;padding:10px;touch-action:manipulation
+    touch-action:manipulation;
+    display:flex;justify-content:center;align-items:center;
 }
 .stars{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
 .star{position:absolute;background:#fff;border-radius:50%;animation:twinkle var(--d) ease-in-out infinite;animation-delay:var(--dl);opacity:0}
 @keyframes twinkle{0%,100%{opacity:.15}50%{opacity:.7}}
 
 /* ===== Pages ===== */
-.page{display:none;position:relative;z-index:1;flex-direction:column;align-items:center;gap:20px;width:100%;max-width:500px}
-.page.active{display:flex}
+.page{display:none;position:relative;z-index:1;width:100%;height:100%;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.page.active{display:flex;flex-direction:column;align-items:center;justify-content:flex-start}
 
 /* ===== HOME PAGE ===== */
-.home-title{font-size:2.5rem;font-weight:bold;color:#fff;text-align:center;margin-top:20px;letter-spacing:4px;text-shadow:0 0 30px rgba(255,215,0,.4)}
-.home-subtitle{color:#888;font-size:.85rem;text-align:center;margin-top:-10px}
-.home-board-preview{width:280px;height:280px;border:3px solid rgba(255,255,255,.15);border-radius:12px;background:rgba(0,0,0,.4);display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);gap:1px;padding:2px;box-shadow:0 0 40px rgba(100,100,255,.1)}
+.home-inner{display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;max-width:400px;padding:20px 16px;min-height:100%;justify-content:center}
+.home-title{font-size:2.2rem;font-weight:bold;color:#fff;text-align:center;letter-spacing:4px;text-shadow:0 0 30px rgba(255,215,0,.4)}
+.home-subtitle{color:#888;font-size:.8rem;text-align:center;margin-top:-8px}
+.home-board-preview{width:min(280px,70vw);height:min(280px,70vw);border:3px solid rgba(255,255,255,.15);border-radius:12px;background:rgba(0,0,0,.4);display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);gap:1px;padding:2px;box-shadow:0 0 40px rgba(100,100,255,.1);flex-shrink:0}
 .home-board-preview .mini-cell{background:rgba(255,255,255,.03);border-radius:2px}
 .home-board-preview .mini-cell.filled{background:var(--fc);border-radius:3px}
 
 .home-high-score{text-align:center}
-.home-high-score .crown{font-size:3rem}
-.home-high-score .hs-val{color:#ffd700;font-size:2.5rem;font-weight:bold;font-family:'Courier New',monospace}
-.home-high-score .hs-label{color:#888;font-size:.7rem;text-transform:uppercase;letter-spacing:2px}
+.home-high-score .crown{font-size:2.5rem}
+.home-high-score .hs-val{color:#ffd700;font-size:2rem;font-weight:bold;font-family:'Courier New',monospace}
+.home-high-score .hs-label{color:#888;font-size:.65rem;text-transform:uppercase;letter-spacing:2px}
 
-.home-mode-label{color:#888;font-size:.7rem;text-transform:uppercase;letter-spacing:2px;text-align:center}
-.home-modes{display:flex;gap:6px;width:100%}
-.home-mode-btn{flex:1;padding:12px 8px;border:2px solid rgba(255,255,255,.15);border-radius:12px;background:rgba(255,255,255,.05);color:#888;font-size:.8rem;font-weight:bold;cursor:pointer;transition:all .2s;font-family:inherit;text-align:center}
+.home-mode-label{color:#888;font-size:.65rem;text-transform:uppercase;letter-spacing:2px;text-align:center}
+.home-modes{display:flex;gap:6px;width:100%;max-width:400px}
+.home-mode-btn{flex:1;padding:10px 6px;border:2px solid rgba(255,255,255,.15);border-radius:10px;background:rgba(255,255,255,.05);color:#888;font-size:.75rem;font-weight:bold;cursor:pointer;transition:all .2s;font-family:inherit;text-align:center}
 .home-mode-btn.active{border-color:#ffd700;color:#ffd700;background:rgba(255,215,0,.08)}
 .home-mode-btn:hover{border-color:rgba(255,255,255,.4)}
 
-.home-buttons{display:flex;flex-direction:column;gap:10px;width:100%}
-.home-btn{width:100%;padding:16px;border:none;border-radius:14px;font-size:1.1rem;font-weight:bold;cursor:pointer;color:#fff;transition:all .2s;font-family:inherit;letter-spacing:1px}
+.home-buttons{display:flex;flex-direction:column;gap:10px;width:100%;max-width:400px}
+.home-btn{width:100%;padding:14px;border:none;border-radius:12px;font-size:1rem;font-weight:bold;cursor:pointer;color:#fff;transition:all .2s;font-family:inherit;letter-spacing:1px}
 .home-btn:hover{filter:brightness(1.15);transform:translateY(-2px)}
 .home-btn:active{transform:translateY(0)}
 .home-btn.primary{background:linear-gradient(135deg,#667eea,#764ba2);box-shadow:0 4px 20px rgba(102,126,234,.3)}
@@ -55,21 +57,21 @@ body{
 .home-btn:disabled{opacity:.35;pointer-events:none}
 
 /* ===== GAME PAGE ===== */
-.game-wrapper{display:flex;gap:20px;align-items:flex-start;padding:10px 0;width:100%}
+.game-page-inner{display:flex;flex-direction:column;width:100%;height:100%;max-width:500px;padding:6px}
 
-.left-panel{display:flex;flex-direction:column;gap:8px;min-width:110px}
-.panel-box{background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.15);border-radius:14px;padding:10px 12px;text-align:center;backdrop-filter:blur(10px);box-shadow:0 4px 16px rgba(0,0,0,.3)}
-.panel-box h3{color:#888;font-size:.65rem;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px}
-.panel-box .val{color:#fff;font-size:1.3rem;font-weight:bold;font-family:'Courier New',monospace}
-.panel-box .val.gold{color:#ffd700}
+/* Top bar: stats in a compact row */
+.game-stats{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;flex-shrink:0;padding:4px 0}
+.stat-box{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:4px 10px;text-align:center;min-width:45px}
+.stat-box h3{color:#888;font-size:.55rem;text-transform:uppercase;letter-spacing:1px}
+.stat-box .val{color:#fff;font-size:.9rem;font-weight:bold;font-family:'Courier New',monospace}
+.stat-box .val.gold{color:#ffd700}
 
-.btn-sm{width:100%;padding:10px;border:none;border-radius:10px;font-size:.75rem;font-weight:bold;cursor:pointer;color:#fff;transition:all .2s;font-family:inherit;letter-spacing:1px}
-.btn-undo{background:linear-gradient(135deg,#f093fb,#f5576c)}
-.btn-menu{background:linear-gradient(135deg,rgba(255,255,255,.1),rgba(255,255,255,.05));border:2px solid rgba(255,255,255,.15);margin-top:4px}
-.btn-sm:hover{filter:brightness(1.15)}
+/* Main area: board in center + pieces on right side */
+.game-main{display:flex;gap:8px;align-items:flex-start;flex:1;min-height:0;justify-content:center;padding:4px 0}
 
-.board-container{position:relative;touch-action:none}
-.board-frame{border:3px solid rgba(255,255,255,.2);border-radius:8px;box-shadow:0 0 50px rgba(100,100,255,.15),inset 0 0 40px rgba(0,0,0,.5);display:inline-block;background:rgba(0,0,0,.5);contain:layout style}
+/* Board */
+.board-container{position:relative;touch-action:none;flex-shrink:0}
+.board-frame{border:2px solid rgba(255,255,255,.2);border-radius:8px;box-shadow:0 0 30px rgba(100,100,255,.12),inset 0 0 30px rgba(0,0,0,.5);display:inline-block;background:rgba(0,0,0,.5);contain:layout style}
 .board-row{display:flex}
 .board-cell{width:var(--cs);height:var(--cs);border:1px solid rgba(255,255,255,.06);background:rgba(0,0,0,.6);transition:background .12s;cursor:pointer}
 .board-cell.filled{border-color:rgba(255,255,255,.15)}
@@ -77,43 +79,48 @@ body{
 .board-cell.invalid{background:rgba(255,50,50,.3)!important}
 .board-cell.clearing{animation:flashClear .35s ease-out}
 @keyframes flashClear{0%{background:rgba(255,255,255,.8)}100%{background:rgba(0,0,0,.6)}}
-.combo-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#ffd700;font-size:1.8rem;font-weight:bold;pointer-events:none;animation:comboUp .8s ease-out forwards;z-index:10;text-shadow:0 0 10px rgba(255,215,0,.6)}
+.combo-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#ffd700;font-size:1.5rem;font-weight:bold;pointer-events:none;animation:comboUp .8s ease-out forwards;z-index:10;text-shadow:0 0 10px rgba(255,215,0,.6)}
 @keyframes comboUp{0%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-140%) scale(1.6)}}
 
-.game-over-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.82);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;border-radius:5px;opacity:0;pointer-events:none;transition:opacity .5s}
+.game-over-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.82);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;border-radius:5px;opacity:0;pointer-events:none;transition:opacity .5s}
 .game-over-overlay.active{opacity:1;pointer-events:all}
-.game-over-overlay .go-title{font-size:2rem;font-weight:bold;color:#ff4444;text-shadow:0 0 20px rgba(255,68,68,.6)}
-.game-over-overlay .go-score{color:#fff;font-size:1.3rem}
-.game-over-overlay .go-sub{color:#aaa;font-size:.85rem}
+.game-over-overlay .go-title{font-size:1.6rem;font-weight:bold;color:#ff4444;text-shadow:0 0 20px rgba(255,68,68,.6)}
+.game-over-overlay .go-score{color:#fff;font-size:1.1rem}
+.game-over-overlay .go-sub{color:#aaa;font-size:.75rem}
 
-.right-panel{display:flex;flex-direction:column;gap:10px;min-width:140px}
-.pieces-area{background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.15);border-radius:14px;padding:12px;backdrop-filter:blur(10px);display:flex;flex-direction:column;align-items:center;gap:8px}
-.pieces-area h3{color:#888;font-size:.65rem;text-transform:uppercase;letter-spacing:2px;text-align:center}
-
-.piece-slot{width:100%;min-height:80px;max-height:130px;display:flex;justify-content:center;align-items:center;border:2px dashed rgba(255,255,255,.1);border-radius:10px;cursor:grab;transition:all .2s;touch-action:none;background:rgba(255,255,255,.02);position:relative;overflow:hidden}
+/* Pieces sidebar */
+.pieces-sidebar{display:flex;flex-direction:column;gap:8px;flex-shrink:0;min-width:80px}
+.pieces-area{background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.15);border-radius:10px;padding:8px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.pieces-area h3{color:#888;font-size:.6rem;text-transform:uppercase;letter-spacing:2px;text-align:center}
+.piece-slot{width:72px;height:72px;display:flex;justify-content:center;align-items:center;border:2px dashed rgba(255,255,255,.1);border-radius:8px;cursor:grab;transition:all .2s;touch-action:none;background:rgba(255,255,255,.02);position:relative;overflow:hidden;flex-shrink:0}
 .piece-slot.selected{border-color:#ffd700;border-style:solid;background:rgba(255,215,0,.08)}
 .piece-slot:hover:not(.selected){border-color:rgba(255,255,255,.3)}
-.piece-slot .piece-inner{display:flex;flex-direction:column;align-items:center}
+.piece-slot .piece-inner{display:flex;flex-direction:column;align-items:center;transform-origin:center center}
 .piece-slot .prow{display:flex}
-.piece-slot .pcell{width:var(--cs);height:var(--cs);border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);border-radius:2px}
-.piece-slot .pcell.filled{border-color:rgba(255,255,255,.35);box-shadow:inset 0 1px 3px rgba(255,255,255,.25),inset 0 -1px 3px rgba(0,0,0,.3)}
+.piece-slot .pcell{width:var(--cs);height:var(--cs);border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);border-radius:1px}
+.piece-slot .pcell.filled{border-color:rgba(255,255,255,.35);box-shadow:inset 0 1px 2px rgba(255,255,255,.25),inset 0 -1px 2px rgba(0,0,0,.3)}
 
+/* Bottom action bar */
+.game-actions{display:flex;gap:8px;flex-shrink:0;padding:4px 0}
+.btn-sm{flex:1;padding:10px 8px;border:none;border-radius:8px;font-size:.75rem;font-weight:bold;cursor:pointer;color:#fff;transition:all .2s;font-family:inherit;letter-spacing:1px}
+.btn-undo{background:linear-gradient(135deg,#f093fb,#f5576c)}
+.btn-menu{background:linear-gradient(135deg,rgba(255,255,255,.1),rgba(255,255,255,.05));border:2px solid rgba(255,255,255,.15)}
+.btn-sm:hover{filter:brightness(1.15)}
+
+/* Drag clone */
 .drag-clone{position:fixed;pointer-events:none;z-index:999;opacity:.85;transform:translate(-50%,-50%);display:flex;flex-direction:column;filter:drop-shadow(0 4px 8px rgba(0,0,0,.5))}
 .drag-clone .drow{display:flex}
 .drag-clone .dcell{width:var(--cs);height:var(--cs);border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);border-radius:2px}
 .drag-clone .dcell.filled{border-color:rgba(255,255,255,.4);box-shadow:inset 0 1px 3px rgba(255,255,255,.3)}
 
-@media(max-width:700px){
-    .home-title{font-size:2rem}
-    .game-wrapper{flex-direction:column;align-items:center;gap:8px}
-    .left-panel,.right-panel{flex-direction:row;flex-wrap:wrap;gap:6px;justify-content:center;min-width:auto}
-    .left-panel .panel-box{padding:6px 8px}
-    .left-panel .panel-box h3{font-size:.55rem;margin-bottom:1px}
-    .left-panel .panel-box .val{font-size:.95rem}
-    .btn-sm{width:auto;flex:1;min-width:55px;font-size:.65rem;padding:8px 10px}
-    .right-panel{width:100%}
-    .pieces-area{flex-direction:row;gap:6px;padding:8px}
-    .piece-slot{min-height:55px;min-width:55px;flex:1}
+/* Landscape mode: board on left, pieces on right */
+@media(orientation:landscape){
+    .game-page-inner{max-width:100%;padding:4px}
+    .game-stats{gap:4px}
+    .stat-box{padding:2px 6px;min-width:35px}
+    .stat-box h3{font-size:.5rem}
+    .stat-box .val{font-size:.75rem}
+    .game-main{gap:6px}
 }
 </style>
 </head>
@@ -123,52 +130,56 @@ body{
 
 <!-- ==================== HOME PAGE ==================== -->
 <div class="page active" id="homePage">
-    <div class="home-title">方块消除</div>
-    <div class="home-subtitle">8×8 棋盘 · 行列消除</div>
-
-    <div class="home-board-preview" id="homePreview"></div>
-
-    <div class="home-high-score">
-        <div class="crown">👑</div>
-        <div class="hs-val" id="homeHighScore">0</div>
-        <div class="hs-label">历史最高分</div>
-    </div>
-
-    <div class="home-mode-label">选择难度</div>
-    <div class="home-modes" id="homeModes">
-        <button class="home-mode-btn" data-mode="easy">🌟 简单</button>
-        <button class="home-mode-btn active" data-mode="normal">⚡ 普通</button>
-        <button class="home-mode-btn" data-mode="hard">🔥 困难</button>
-    </div>
-
-    <div class="home-buttons">
-        <button class="home-btn primary" id="btnNewGame">🎮 新游戏</button>
-        <button class="home-btn secondary" id="btnContinue">▶ 继续游戏</button>
+    <div class="home-inner">
+        <div class="home-title">方块消除</div>
+        <div class="home-subtitle">8×8 棋盘 · 行列消除</div>
+        <div class="home-board-preview" id="homePreview"></div>
+        <div class="home-high-score">
+            <div class="crown">👑</div>
+            <div class="hs-val" id="homeHighScore">0</div>
+            <div class="hs-label">历史最高分</div>
+        </div>
+        <div class="home-mode-label">选择难度</div>
+        <div class="home-modes" id="homeModes">
+            <button class="home-mode-btn" data-mode="easy">🌟 简单</button>
+            <button class="home-mode-btn active" data-mode="normal">⚡ 普通</button>
+            <button class="home-mode-btn" data-mode="hard">🔥 困难</button>
+        </div>
+        <div class="home-buttons">
+            <button class="home-btn primary" id="btnNewGame">🎮 新游戏</button>
+            <button class="home-btn secondary" id="btnContinue">▶ 继续游戏</button>
+        </div>
     </div>
 </div>
 
 <!-- ==================== GAME PAGE ==================== -->
 <div class="page" id="gamePage">
-    <div class="game-wrapper">
-        <div class="left-panel">
-            <div class="panel-box"><h3>🏆 分数</h3><div class="val" id="score">0</div></div>
-            <div class="panel-box"><h3>👑 最高分</h3><div class="val gold" id="highScore">0</div></div>
-            <div class="panel-box"><h3>📊 消除行</h3><div class="val" id="rowsCleared">0</div></div>
-            <div class="panel-box"><h3>📊 消除列</h3><div class="val" id="colsCleared">0</div></div>
-            <div class="panel-box"><h3>🔥 连击</h3><div class="val" id="combo">0</div></div>
-            <button class="btn-sm btn-undo" id="btnUndo">↩ 撤销</button>
-            <button class="btn-sm btn-menu" id="btnToMenu">🏠 菜单</button>
+    <div class="game-page-inner">
+        <!-- Top stats bar -->
+        <div class="game-stats">
+            <div class="stat-box"><h3>🏆 分数</h3><div class="val" id="score">0</div></div>
+            <div class="stat-box"><h3>👑 最高分</h3><div class="val gold" id="highScore">0</div></div>
+            <div class="stat-box"><h3>📊 消除</h3><div class="val" id="linesCleared">0</div></div>
+            <div class="stat-box"><h3>🔥 连击</h3><div class="val" id="combo">0</div></div>
         </div>
-        <div class="board-container" id="boardContainer">
-            <div class="board-frame" id="boardFrame"></div>
-            <div class="game-over-overlay" id="gameOver">
-                <div class="go-title">游戏结束</div>
-                <div class="go-score" id="goScore">最终得分: 0</div>
-                <div class="go-sub">点击"菜单"返回首页</div>
+        <!-- Main: board + pieces -->
+        <div class="game-main">
+            <div class="board-container" id="boardContainer">
+                <div class="board-frame" id="boardFrame"></div>
+                <div class="game-over-overlay" id="gameOver">
+                    <div class="go-title">游戏结束</div>
+                    <div class="go-score" id="goScore">最终得分: 0</div>
+                    <div class="go-sub">点击"菜单"返回首页</div>
+                </div>
+            </div>
+            <div class="pieces-sidebar">
+                <div class="pieces-area" id="piecesArea"><h3>🎯</h3></div>
             </div>
         </div>
-        <div class="right-panel">
-            <div class="pieces-area" id="piecesArea"><h3>🎯 当前图形</h3></div>
+        <!-- Bottom actions -->
+        <div class="game-actions">
+            <button class="btn-sm btn-undo" id="btnUndo">↩ 撤销</button>
+            <button class="btn-sm btn-menu" id="btnToMenu">🏠 菜单</button>
         </div>
     </div>
 </div>
@@ -176,7 +187,18 @@ body{
 <script>
 (function(){
 var BOARD = 8;
-var CELL = 44;
+// Cell size: auto-scale based on available height
+var CELL = 40;
+
+function recalcCellSize(){
+    // Board = 8 cells + 2px border each side ≈ 8*CELL + 8
+    // Available height: window height - stats(36) - actions(36) - padding(12) - pieces gap
+    var availH = window.innerHeight - 120;
+    var availW = window.innerWidth - 120; // leave room for pieces sidebar
+    CELL = Math.floor(Math.min(availH / 8, availW / 9));
+    CELL = Math.max(28, Math.min(52, CELL)); // clamp
+}
+recalcCellSize();
 
 // ============ Shapes ============
 var SHAPES = [
@@ -194,8 +216,8 @@ var SHAPES = [
     [[1,1,1],[1,1,1],[1,1,1]]
 ];
 
-function cellCount(idx) {
-    var m=SHAPES[idx], n=0;
+function cellCount(idx){
+    var m=SHAPES[idx],n=0;
     for(var r=0;r<m.length;r++)for(var c=0;c<m[r].length;c++)if(m[r][c])n++;
     return n;
 }
@@ -207,78 +229,66 @@ for(var i=0;i<SHAPES.length;i++){
 }
 
 var gameMode='normal';
-// Mode config: [smallWeight, mediumWeight, largeWeight]
-// Easy: more small pieces, gentle
-// Normal: balanced
-// Hard: more large pieces, but ALWAYS ensures at least 1 piece per set fits
-var MODE_WEIGHTS = {easy:[0.55,0.35,0.10], normal:[0.35,0.35,0.30], hard:[0.15,0.35,0.50]};
+var MODE_WEIGHTS={easy:[0.55,0.35,0.10],normal:[0.35,0.35,0.30],hard:[0.15,0.35,0.50]};
 
-// Check if a shape can fit anywhere on the current board
 function shapeFitsAnywhere(shapeIdx){
     var m=SHAPES[shapeIdx];
     for(var r=0;r<BOARD;r++)for(var c=0;c<BOARD;c++)if(canPlace(m,r,c))return true;
     return false;
 }
 
-// Pick a shape that CAN fit somewhere on the board (adaptive, not pure random)
 function pickFittingShape(tries){
     if(!tries)tries=0;
     var idx=weightedPick();
-    // If we've tried too many times, just return this one
     if(tries>30)return idx;
-    // Check if it fits — if not, try again
     if(!shapeFitsAnywhere(idx))return pickFittingShape(tries+1);
     return idx;
 }
 
 function weightedPick(){
-    var w=MODE_WEIGHTS[gameMode], r=Math.random();
+    var w=MODE_WEIGHTS[gameMode],r=Math.random();
     if(r<w[0])return SMALL[Math.floor(Math.random()*SMALL.length)];
     if(r<w[0]+w[1])return MEDIUM[Math.floor(Math.random()*MEDIUM.length)];
     return LARGE[Math.floor(Math.random()*LARGE.length)];
 }
 
-var COLORS = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff922b','#cc5de8','#20c997','#f06595','#ffe066','#5c7cfa','#ff8787','#63e6be','#e599f7','#ffa94d','#74c0fc','#fcc419','#9775fa','#ff6b6b','#51cf66'];
+var COLORS=['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff922b','#cc5de8','#20c997','#f06595','#ffe066','#5c7cfa','#ff8787','#63e6be','#e599f7','#ffa94d','#74c0fc','#fcc419','#9775fa','#ff6b6b','#51cf66'];
 function getColor(idx){return COLORS[idx%COLORS.length];}
 
 // ============ Pages ============
-var homePage = document.getElementById('homePage');
-var gamePage = document.getElementById('gamePage');
-var homePreview = document.getElementById('homePreview');
-var homeHighScoreEl = document.getElementById('homeHighScore');
-var btnNewGame = document.getElementById('btnNewGame');
-var btnContinue = document.getElementById('btnContinue');
-var btnToMenu = document.getElementById('btnToMenu');
-var homeModes = document.getElementById('homeModes');
+var homePage=document.getElementById('homePage');
+var gamePage=document.getElementById('gamePage');
+var homePreview=document.getElementById('homePreview');
+var homeHighScoreEl=document.getElementById('homeHighScore');
+var btnNewGame=document.getElementById('btnNewGame');
+var btnContinue=document.getElementById('btnContinue');
+var btnToMenu=document.getElementById('btnToMenu');
+var homeModes=document.getElementById('homeModes');
 
-var highScore = parseInt(localStorage.getItem('blockgame_highscore')||'0');
+var highScore=parseInt(localStorage.getItem('blockgame_highscore')||'0');
 
 function showPage(name){
-    homePage.classList.toggle('active', name==='home');
-    gamePage.classList.toggle('active', name==='game');
-    if(name==='home'){ updateHomePage(); }
-    if(name==='game'){ saveGame(); }
+    homePage.classList.toggle('active',name==='home');
+    gamePage.classList.toggle('active',name==='game');
+    if(name==='home')updateHomePage();
+    if(name==='game'){recalcCellSize();saveGame();}
 }
 
-// ============ Home Page ============
 function updateHomePage(){
-    homeHighScoreEl.textContent = highScore;
-    btnContinue.disabled = !hasSaveData();
+    homeHighScoreEl.textContent=highScore;
+    btnContinue.disabled=!hasSaveData();
     renderHomePreview();
 }
 
 function renderHomePreview(){
-    homePreview.innerHTML = '';
-    var demoColors = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff922b','#cc5de8','#20c997'];
-    var ci = 0;
+    homePreview.innerHTML='';
+    var demoColors=['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff922b','#cc5de8','#20c997'];
+    var ci=0;
     for(var r=0;r<8;r++){
         for(var c=0;c<8;c++){
-            var cell=document.createElement('div');
-            cell.className='mini-cell';
-            if((r+c)%3===0 || (r===3&&c>2&&c<6) || (c===4&&r>3&&r<7)){
-                cell.classList.add('filled');
-                cell.style.setProperty('--fc', demoColors[ci%demoColors.length]);
-                ci++;
+            var cell=document.createElement('div');cell.className='mini-cell';
+            if((r+c)%3===0||(r===3&&c>2&&c<6)||(c===4&&r>3&&r<7)){
+                cell.classList.add('filled');cell.style.setProperty('--fc',demoColors[ci%demoColors.length]);ci++;
             }
             homePreview.appendChild(cell);
         }
@@ -286,25 +296,24 @@ function renderHomePreview(){
 }
 
 function hasSaveData(){
-    try{return !!localStorage.getItem('blockgame_v3');}catch(e){return false;}
+    try{return !!localStorage.getItem('blockgame_v4');}catch(e){return false;}
 }
 
 // ============ Game State ============
-var board=[],score=0,rowsCleared=0,colsCleared=0,combo=0,gameOver=false;
+var board=[],score=0,linesCleared=0,combo=0,gameOver=false;
 var currentPieces=[null,null,null],selectedIdx=-1,previewCells=[],history=[],clearing=false;
 
-// DOM
 var boardFrame=document.getElementById('boardFrame');
 var piecesArea=document.getElementById('piecesArea');
 var scoreEl=document.getElementById('score');
-var rowsEl=document.getElementById('rowsCleared');
-var colsEl=document.getElementById('colsCleared');
+var linesEl=document.getElementById('linesCleared');
 var comboEl=document.getElementById('combo');
 var gameOverEl=document.getElementById('gameOver');
 var goScoreEl=document.getElementById('goScore');
 var highScoreEl=document.getElementById('highScore');
 
 function createBoard(){board=[];for(var r=0;r<BOARD;r++){board[r]=[];for(var c=0;c<BOARD;c++)board[r][c]=null;}}
+
 function renderBoard(){
     boardFrame.innerHTML='';
     for(var r=0;r<BOARD;r++){
@@ -326,17 +335,30 @@ function renderBoard(){
 }
 
 function renderPieces(){
-    piecesArea.innerHTML='<h3>🎯 当前图形</h3>';
+    piecesArea.innerHTML='<h3>🎯</h3>';
+    // Auto-scale piece cell size to fit in slots
+    var maxCells=0;
+    for(var i=0;i<3;i++){
+        if(currentPieces[i]!==null){
+            var m=SHAPES[currentPieces[i]];
+            var mc=Math.max(m.length,m[0].length);
+            if(mc>maxCells)maxCells=mc;
+        }
+    }
+    var pieceCell=Math.floor(68/Math.max(maxCells,1));
+    pieceCell=Math.max(10,Math.min(pieceCell,22));
+
     for(var i=0;i<3;i++){
         var slot=document.createElement('div');slot.className='piece-slot';
         if(i===selectedIdx)slot.classList.add('selected');
         if(currentPieces[i]!==null){
             var shapeIdx=currentPieces[i],matrix=SHAPES[shapeIdx],color=getColor(shapeIdx);
             var inner=document.createElement('div');inner.className='piece-inner';
+            inner.style.transform='scale('+(pieceCell/22)+')';
             for(var r=0;r<matrix.length;r++){
                 var prow=document.createElement('div');prow.className='prow';
                 for(var c=0;c<matrix[r].length;c++){
-                    var pcell=document.createElement('div');pcell.className='pcell';pcell.style.setProperty('--cs',CELL+'px');
+                    var pcell=document.createElement('div');pcell.className='pcell';pcell.style.setProperty('--cs','22px');
                     if(matrix[r][c]){pcell.classList.add('filled');pcell.style.background=color;}
                     prow.appendChild(pcell);
                 }
@@ -348,13 +370,14 @@ function renderPieces(){
                 slot.addEventListener('click',function(e){e.stopPropagation();selectPiece(idx);});
             })(i);
         }else{
-            slot.innerHTML='<span style="color:#3a3a3a;font-size:0.7rem;">已放置</span>';slot.style.cursor='default';
+            slot.innerHTML='<span style="color:#3a3a3a;font-size:.55rem;">已放置</span>';slot.style.cursor='default';
         }
         piecesArea.appendChild(slot);
     }
 }
 
 function selectPiece(idx){if(currentPieces[idx]===null)return;selectedIdx=idx;renderPieces();renderBoard();}
+
 function canPlace(matrix,row,col){
     for(var r=0;r<matrix.length;r++)for(var c=0;c<matrix[r].length;c++){
         if(!matrix[r][c])continue;
@@ -370,16 +393,14 @@ function placePiece(shapeIdx,row,col){
     if(clearing)return false;
     var matrix=SHAPES[shapeIdx];
     if(!canPlace(matrix,row,col))return false;
-    // Lock: prevent double-placement during animation
     clearing=true;
-    history.push({board:board.map(function(r){return r.slice()}),score:score,rowsCleared:rowsCleared,colsCleared:colsCleared,combo:combo,pieces:currentPieces.slice(),selectedIdx:selectedIdx});
+    history.push({board:board.map(function(r){return r.slice()}),score:score,linesCleared:linesCleared,combo:combo,pieces:currentPieces.slice(),selectedIdx:selectedIdx});
     if(history.length>50)history.shift();
     var color=getColor(shapeIdx);
     for(var r=0;r<matrix.length;r++)for(var c=0;c<matrix[r].length;c++)if(matrix[r][c])board[row+r][col+c]=color;
     var cc=0;for(var rr=0;rr<matrix.length;rr++)for(var cc2=0;cc2<matrix[rr].length;cc2++)if(matrix[rr][cc2])cc++;
     score+=cc*5;
     currentPieces[selectedIdx]=null;
-    // Release lock for checkClears (it re-sets clearing for its own animation)
     clearing=false;
     checkClears();
     if(currentPieces[0]===null&&currentPieces[1]===null&&currentPieces[2]===null)refillPieces();
@@ -406,7 +427,7 @@ function checkClears(){
         for(var ci=0;ci<colsToClear.length;ci++)for(var rr=0;rr<BOARD;rr++)board[rr][colsToClear[ci]]=null;
         var base={1:100,2:300,3:600,4:1000,5:1500,6:2100,7:2800,8:3600};
         score+=(base[total]||total*500)*(combo+1);combo++;
-        rowsCleared+=rowsToClear.length;colsCleared+=colsToClear.length;
+        linesCleared+=total;
         showCombo(total);clearing=false;updateDisplay();renderBoard();
         if(!canPlaceAny())triggerGameOver();else saveGame();
     },350);
@@ -430,16 +451,8 @@ function onBoardClick(r,c){
     var idx=currentPieces[selectedIdx],matrix=SHAPES[idx];
     var sr=r-Math.floor(matrix.length/2),sc=c-Math.floor(matrix[0].length/2);
     if(canPlace(matrix,sr,sc)){placePiece(idx,sr,sc);return;}
-    // Auto-snap only if this is near a valid spot
     var found=false,bestR=-1,bestC=-1,bestDist=999;
-    for(var tr=0;tr<BOARD;tr++){
-        for(var tc=0;tc<BOARD;tc++){
-            if(canPlace(matrix,tr,tc)){
-                var dist=Math.abs(tr-sr)+Math.abs(tc-sc);
-                if(dist<bestDist){bestDist=dist;bestR=tr;bestC=tc;found=true;}
-            }
-        }
-    }
+    for(var tr=0;tr<BOARD;tr++)for(var tc=0;tc<BOARD;tc++)if(canPlace(matrix,tr,tc)){var dist=Math.abs(tr-sr)+Math.abs(tc-sc);if(dist<bestDist){bestDist=dist;bestR=tr;bestC=tc;found=true;}}
     if(found&&bestDist<=4){placePiece(idx,bestR,bestC);return;}
     flashInvalid(r,c);
 }
@@ -462,55 +475,38 @@ function triggerGameOver(){
 
 function refillPieces(){
     var used={},largeCount=0;
-    var allFitting=true;
     for(var i=0;i<3;i++){
         var idx,tries=0;
-        do{
-            // Use adaptive picking: ensures each shape can actually fit
-            idx=pickFittingShape();
-            tries++;
-            if(used[idx])continue;
-            if(cellCount(idx)>=6&&largeCount>0)continue;
-            break;
-        }while(tries<50);
-        used[idx]=true;
-        if(cellCount(idx)>=6)largeCount++;
-        currentPieces[i]=idx;
+        do{idx=pickFittingShape();tries++;if(used[idx])continue;if(cellCount(idx)>=6&&largeCount>0)continue;break;}while(tries<50);
+        used[idx]=true;if(cellCount(idx)>=6)largeCount++;currentPieces[i]=idx;
     }
-    // Safety: if somehow none of the 3 pieces fit (shouldn't happen but just in case),
-    // force replace the largest piece with a guaranteed-fitting small one
     var noneFit=true;
     for(var i=0;i<3;i++){if(shapeFitsAnywhere(currentPieces[i])){noneFit=false;break;}}
-    if(noneFit){
-        // Replace first piece with a small fitting one
-        for(var si=0;si<SMALL.length;si++){
-            if(shapeFitsAnywhere(SMALL[si])){currentPieces[0]=SMALL[si];break;}
-        }
-    }
+    if(noneFit){for(var si=0;si<SMALL.length;si++){if(shapeFitsAnywhere(SMALL[si])){currentPieces[0]=SMALL[si];break;}}}
     selectedIdx=0;
 }
 
 function undo(){
     if(gameOver||clearing)return;if(history.length===0)return;
-    var prev=history.pop();board=prev.board;score=prev.score;rowsCleared=prev.rowsCleared;colsCleared=prev.colsCleared;combo=prev.combo;currentPieces=prev.pieces;selectedIdx=prev.selectedIdx;
+    var prev=history.pop();board=prev.board;score=prev.score;linesCleared=prev.linesCleared;combo=prev.combo;currentPieces=prev.pieces;selectedIdx=prev.selectedIdx;
     if(selectedIdx<0)for(var i=0;i<3;i++){if(currentPieces[i]!==null){selectedIdx=i;break;}}
     previewCells=[];updateDisplay();renderPieces();renderBoard();saveGame();
 }
 
 function updateDisplay(){
-    scoreEl.textContent=score;rowsEl.textContent=rowsCleared;colsEl.textContent=colsCleared;comboEl.textContent=combo;highScoreEl.textContent=highScore;
+    scoreEl.textContent=score;linesEl.textContent=linesCleared;comboEl.textContent=combo;highScoreEl.textContent=highScore;
 }
 
 function saveGame(){
-    try{var d={board:board,score:score,rowsCleared:rowsCleared,colsCleared:colsCleared,combo:combo,gameOver:gameOver,currentPieces:currentPieces,history:history.slice(-20),selectedIdx:selectedIdx,mode:gameMode};localStorage.setItem('blockgame_v3',JSON.stringify(d));}catch(e){}
+    try{var d={board:board,score:score,linesCleared:linesCleared,combo:combo,gameOver:gameOver,currentPieces:currentPieces,history:history.slice(-20),selectedIdx:selectedIdx,mode:gameMode};localStorage.setItem('blockgame_v4',JSON.stringify(d));}catch(e){}
 }
 
 function loadGame(){
-    try{var raw=localStorage.getItem('blockgame_v3');if(!raw)return false;var d=JSON.parse(raw);board=d.board;score=d.score;rowsCleared=d.rowsCleared;colsCleared=d.colsCleared;combo=d.combo;gameOver=d.gameOver;currentPieces=d.currentPieces;history=d.history||[];selectedIdx=d.selectedIdx;if(d.mode)gameMode=d.mode;if(gameOver)gameOverEl.classList.add('active');updateDisplay();renderPieces();previewCells=[];renderBoard();return true;}catch(e){return false;}
+    try{var raw=localStorage.getItem('blockgame_v4');if(!raw)return false;var d=JSON.parse(raw);board=d.board;score=d.score;linesCleared=d.linesCleared;combo=d.combo;gameOver=d.gameOver;currentPieces=d.currentPieces;history=d.history||[];selectedIdx=d.selectedIdx;if(d.mode)gameMode=d.mode;if(gameOver)gameOverEl.classList.add('active');updateDisplay();renderPieces();previewCells=[];renderBoard();return true;}catch(e){return false;}
 }
 
 function startNewGame(){
-    createBoard();score=0;rowsCleared=0;colsCleared=0;combo=0;gameOver=false;previewCells=[];history=[];clearing=false;gameOverEl.classList.remove('active');refillPieces();updateDisplay();renderPieces();renderBoard();saveGame();
+    recalcCellSize();createBoard();score=0;linesCleared=0;combo=0;gameOver=false;previewCells=[];history=[];clearing=false;gameOverEl.classList.remove('active');refillPieces();updateDisplay();renderPieces();renderBoard();saveGame();
 }
 
 // ============ Drag ============
@@ -527,13 +523,10 @@ function updateDrag(e){if(!dragClone)return;dragClone.style.left=e.clientX+'px';
 function endDrag(e){if(dragClone){dragClone.remove();dragClone=null;}if(dragPieceIdx<0)return;
     var br=boardFrame.getBoundingClientRect();var rx=e.clientX-br.left,ry=e.clientY-br.top,col=Math.floor(rx/CELL),row=Math.floor(ry/CELL);
     if(rx>=0&&rx<br.width&&ry>=0&&ry<br.height){var idx=currentPieces[dragPieceIdx];if(idx!==null){var m=SHAPES[idx];var sr=row-Math.floor(m.length/2),sc=col-Math.floor(m[0].length/2);
-            if(canPlace(m,sr,sc))placePiece(idx,sr,sc);
-            else{
-                // Auto-snap to nearest valid spot (max distance 3)
-                var bestR=-1,bestC=-1,bestD=999;
-                for(var tr=0;tr<BOARD;tr++)for(var tc=0;tc<BOARD;tc++)if(canPlace(m,tr,tc)){var d=Math.abs(tr-sr)+Math.abs(tc-sc);if(d<bestD){bestD=d;bestR=tr;bestC=tc;}}
-                if(bestD<=3)placePiece(idx,bestR,bestC);
-            }}}
+        if(canPlace(m,sr,sc))placePiece(idx,sr,sc);
+        else{var bestR=-1,bestC=-1,bestD=999;
+            for(var tr=0;tr<BOARD;tr++)for(var tc=0;tc<BOARD;tc++)if(canPlace(m,tr,tc)){var d=Math.abs(tr-sr)+Math.abs(tc-sc);if(d<bestD){bestD=d;bestR=tr;bestC=tc;}}
+            if(bestD<=3)placePiece(idx,bestR,bestC);}}}
     dragPieceIdx=-1;previewCells=[];renderBoard();renderPieces();}
 document.addEventListener('pointerup',endDrag);
 document.addEventListener('pointermove',function(e){if(dragPieceIdx>=0)updateDrag(e);});
@@ -550,14 +543,18 @@ document.addEventListener('keydown',function(e){
     if(e.code==='Space'){e.preventDefault();var sr=Math.floor((BOARD-m.length)/2),sc=Math.floor((BOARD-m[0].length)/2);if(canPlace(m,sr,sc))placePiece(idx,sr,sc);else{for(var r=0;r<BOARD;r++)for(var c=0;c<BOARD;c++)if(canPlace(m,r,c)){placePiece(idx,r,c);return;}}}
 });
 
+// ============ Window resize ============
+window.addEventListener('resize',function(){
+    recalcCellSize();
+    if(gamePage.classList.contains('active')){renderBoard();renderPieces();}
+});
+
 // ============ Buttons ============
-btnNewGame.addEventListener('click',function(){
-    startNewGame();showPage('game');});
+btnNewGame.addEventListener('click',function(){startNewGame();showPage('game');});
 btnContinue.addEventListener('click',function(){if(!hasSaveData())return;if(!loadGame()){startNewGame();}showPage('game');});
 btnToMenu.addEventListener('click',function(){saveGame();showPage('home');});
 document.getElementById('btnUndo').addEventListener('click',undo);
 
-// Mode selector (home page)
 homeModes.addEventListener('click',function(e){if(e.target.classList.contains('home-mode-btn')){
     var btns=document.querySelectorAll('.home-mode-btn');for(var b=0;b<btns.length;b++)btns[b].classList.remove('active');
     e.target.classList.add('active');gameMode=e.target.getAttribute('data-mode');
@@ -567,7 +564,7 @@ homeModes.addEventListener('click',function(e){if(e.target.classList.contains('h
 // ============ Stars ============
 (function(){
     var c=document.getElementById('stars');
-    for(var i=0;i<60;i++){var s=document.createElement('div');s.className='star';s.style.left=Math.random()*100+'%';s.style.top=Math.random()*100+'%';var sz=Math.random()*2+1;s.style.width=sz+'px';s.style.height=sz+'px';s.style.setProperty('--d',(Math.random()*3+2)+'s');s.style.setProperty('--dl',Math.random()*5+'s');c.appendChild(s);}
+    for(var i=0;i<50;i++){var s=document.createElement('div');s.className='star';s.style.left=Math.random()*100+'%';s.style.top=Math.random()*100+'%';var sz=Math.random()*2+1;s.style.width=sz+'px';s.style.height=sz+'px';s.style.setProperty('--d',(Math.random()*3+2)+'s');s.style.setProperty('--dl',Math.random()*5+'s');c.appendChild(s);}
 })();
 
 // ============ Init ============
@@ -577,7 +574,6 @@ for(var b=0;b<hmBtns.length;b++){hmBtns[b].classList.remove('active');if(hmBtns[
 createBoard();highScoreEl.textContent=highScore;
 updateHomePage();
 
-// Service Worker
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
 
 })();
