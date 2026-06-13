@@ -270,7 +270,7 @@ body{
 // ==================== CONSTANTS ====================
 var BOARD = 8;
 var CELL = 40;
-var WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+var WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host;
 
 // ==================== SHAPES & COLORS ====================
 var SHAPES=[
@@ -661,13 +661,14 @@ function connectWS(){
   MP.ws.onopen=function(){console.log('WS connected');MP.reconnecting=false;};
   MP.ws.onmessage=function(e){handleMsg(JSON.parse(e.data));};
   MP.ws.onclose=function(){
+    console.log('WS closed');
     if(MP.active&&!MP.reconnecting){
       MP.reconnecting=true;
       showToast('连接断开，尝试重连...',true);
       setTimeout(function(){if(MP.active)connectWS();},3000);
     }
   };
-  MP.ws.onerror=function(){};
+  MP.ws.onerror=function(e){console.log('WS error');};
 }
 
 function sendMsg(msg){if(MP.ws&&MP.ws.readyState===1){MP.ws.send(JSON.stringify(msg));}}
@@ -966,7 +967,10 @@ btnCreateRoom.addEventListener('click',function(){
       sendMsg({type:'create_room',playerCount:MP_PLAYER_COUNT,highScore:highScore});
       btnCreateRoom.disabled=true;
     }
+    if(MP.ws&&MP.ws.readyState===0){console.log('WS connecting...');}
   },100);
+  // 超时处理
+  setTimeout(function(){if(MP.ws&&MP.ws.readyState!==1){showToast('连接失败，请检查网络');btnCreateRoom.disabled=false;}},10000);
 });
 
 btnJoinRoom.addEventListener('click',function(){
