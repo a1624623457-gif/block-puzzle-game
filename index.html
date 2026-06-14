@@ -166,10 +166,37 @@ body{
   .piece-slot{width:64px;height:64px}
   .game-stats{gap:2px}
   .stat-box{padding:3px 4px}
-}
+  }
+
+  /* Language selector */
+  .lang-selector{position:fixed;top:10px;right:16px;z-index:100;display:flex;gap:4px}
+  .lang-flag{width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,.3);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);color:#fff;font-weight:bold;transition:all .2s}
+  .lang-flag:hover{border-color:#ffd700;background:rgba(255,255,255,.25);transform:scale(1.1)}
+  .lang-flag.active{border-color:#ffd700;background:rgba(255,215,0,.25);color:#ffd700;box-shadow:0 0 8px rgba(255,215,0,.3)}
+
+  /* How to play button */
+  .how-to-btn{position:fixed;bottom:20px;right:16px;z-index:100;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.3);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+  .how-to-btn:hover{background:rgba(255,215,0,.2);border-color:#ffd700;color:#ffd700;transform:scale(1.1)}
+
+  /* Modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+  .modal-card{background:#1a1814;border:1px solid #2e2b24;border-radius:16px;padding:28px;max-width:460px;width:100%;max-height:80vh;overflow-y:auto;color:#e8e2d4}
+  .modal-card h2{color:#ffd700;font-size:1.3rem;margin-bottom:16px;text-align:center}
+  .modal-card p,.modal-card li{font-size:14px;line-height:1.8;color:#ccc;margin-bottom:8px}
+  .modal-card ul{padding-left:18px;margin-bottom:12px}
+  .modal-close{display:block;margin:20px auto 0;padding:10px 30px;background:linear-gradient(135deg,#667eea,#764ba2);border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:bold;cursor:pointer}
 </style>
 </head>
 <body>
+
+<div class="lang-selector" id="langSelector">
+  <div class="lang-flag active" data-lang="zh" title="中文">中</div>
+  <div class="lang-flag" data-lang="en" title="English">EN</div>
+  <div class="lang-flag" data-lang="es" title="Español">ES</div>
+</div>
+
+<!-- Page: How to Play -->
+<button class="how-to-btn" id="btnHowTo" title="玩法介绍">?</button>
 
 <div class="stars" id="stars"></div>
 
@@ -221,7 +248,7 @@ body{
       </div>
     </div>
     <div class="player-list" id="playerList"></div>
-    <div class="room-status" id="roomStatus">等待房间创建...</div>
+    <div class="room-status" id="roomStatus">选择创建或加入房间</div>
     <button class="room-btn join" id="btnReady" disabled style="background:linear-gradient(135deg,#4ade80,#22c55e)">✅ 准备</button>
     <button class="room-btn join" id="btnUnready" disabled style="background:rgba(255,255,255,.1)">取消准备</button>
     <button class="room-btn leave" id="btnLeaveRoom">退出房间</button>
@@ -295,727 +322,135 @@ for(var i=0;i<SHAPES.length;i++){var cnt=cellCount(i);if(cnt<=3)SMALL.push(i);el
 var gameMode='normal';
 var MODE_WEIGHTS={normal:[0.35,0.35,0.30],hard:[0.15,0.35,0.50]};
 var MP_PLAYER_COUNT=2; // 多人模式人数 (2/3/4)
+var LANG = (localStorage.getItem('blockgame_lang') || 'zh'); // current language
 
-function shapeFitsAnywhere(idx,board){var m=SHAPES[idx];for(var r=0;r<BOARD;r++)for(var c=0;c<BOARD;c++)if(canPlace(m,r,c,board))return true;return false;}
-function pickFittingShape(t,board){if(!t)t=0;var i=weightedPick();if(t>30)return i;if(!shapeFitsAnywhere(i,board))return pickFittingShape(t+1,board);return i;}
-function weightedPick(){var w=MODE_WEIGHTS[gameMode==='multiplayer'?'normal':gameMode],r=Math.random();if(r<w[0])return SMALL[Math.floor(Math.random()*SMALL.length)];if(r<w[0]+w[1])return MEDIUM[Math.floor(Math.random()*MEDIUM.length)];return LARGE[Math.floor(Math.random()*LARGE.length)];}
-
-var COLORS=['#ff5252','#448aff','#cc5de8','#ff85a2','#ff922b','#6bcb77','#20c997','#ffd93d','#ff6b6b','#4d96ff','#ff922b','#cc5de8','#ff5252','#448aff','#6bcb77','#ffd93d','#ff85a2','#20c997','#ff6b6b','#4d96ff','#ff922b','#cc5de8','#ff5252','#448aff','#6bcb77','#ffd93d','#ff85a2'];
-function getColor(idx){return COLORS[idx%COLORS.length];}
-
-// ==================== DOM REFS ====================
-var homePage=document.getElementById('homePage'),roomPage=document.getElementById('roomPage'),gamePage=document.getElementById('gamePage');
-var homePreview=document.getElementById('homePreview'),homeHighScoreEl=document.getElementById('homeHighScore');
-var homeModes=document.getElementById('homeModes'),homeMPCount=document.getElementById('homeMPCount');
-var btnNewGame=document.getElementById('btnNewGame'),btnContinue=document.getElementById('btnContinue'),btnMPMode=document.getElementById('btnMPMode');
-var btnToMenu=document.getElementById('btnToMenu'),btnUndo=document.getElementById('btnUndo');
-var boardFrame=document.getElementById('boardFrame'),piecesSection=document.getElementById('piecesSection');
-var scoreEl=document.getElementById('score'),linesEl=document.getElementById('linesCleared'),comboEl=document.getElementById('combo');
-var gameOverEl=document.getElementById('gameOver'),goScoreEl=document.getElementById('goScore'),goTitle=document.getElementById('goTitle');
-var highScoreEl=document.getElementById('highScore'),statHighScore=document.getElementById('statHighScore');
-var mpWaiting=document.getElementById('mpWaiting'),mpwText=document.getElementById('mpwText'),mpwSub=document.getElementById('mpwSub');
-var gameStats=document.getElementById('gameStats'),gameActions=document.getElementById('gameActions');
-
-// Room page refs
-var roomCreateCard=document.getElementById('roomCreateCard'),roomJoinCard=document.getElementById('roomJoinCard');
-var roomCodeDisplay=document.getElementById('roomCodeDisplay'),roomCodeHint=document.getElementById('roomCodeHint');
-var roomJoinInput=document.getElementById('roomJoinInput');
-var btnCreateRoom=document.getElementById('btnCreateRoom'),btnJoinRoom=document.getElementById('btnJoinRoom');
-var btnReady=document.getElementById('btnReady'),btnUnready=document.getElementById('btnUnready'),btnLeaveRoom=document.getElementById('btnLeaveRoom');
-var playerList=document.getElementById('playerList'),roomStatus=document.getElementById('roomStatus');
-var btnRoomBack=document.getElementById('btnRoomBack');
-
-var highScore=parseInt(localStorage.getItem('blockgame_highscore')||'0');
-
-// ==================== SIZE CALC ====================
-function calcSize(){
-  var availH=window.innerHeight-195;
-  var availW=window.innerWidth-32;
-  CELL=Math.min(Math.floor(availH/8),Math.floor(availW/8));
-  CELL=Math.max(32,Math.min(56,CELL));
-}
-calcSize();
-
-// ==================== PAGE SWITCHING ====================
-function showPage(name){
-  homePage.classList.toggle('active',name==='home');
-  roomPage.classList.toggle('active',name==='room');
-  gamePage.classList.toggle('active',name==='game');
-  if(name==='home')updateHomePage();
-  if(name==='game'){calcSize();if(!MP.active)saveGame();}
-  if(name==='room')updateRoomUI();
-}
-function updateHomePage(){
-  homeHighScoreEl.textContent=highScore;
-  btnContinue.disabled=!hasSaveData();
-  renderHomePreview();
-  // 更新模式按钮状态
-  var modeBtns=homeModes.querySelectorAll('.home-mode-btn');
-  for(var b=0;b<modeBtns.length;b++){
-    modeBtns[b].classList.toggle('active',modeBtns[b].getAttribute('data-mode')===gameMode);
+// ═══════════════════════════════════════════════════════
+//  MULTI-LANGUAGE SYSTEM
+// ═══════════════════════════════════════════════════════
+var T = {
+  zh: {
+    appTitle: '方块消除', appSubtitle: '8×8 棋盘 · 行列消除', highScore: '历史最高分', selectMode: '选择难度',
+    normal: '⚡ 普通', hard: '🔥 困难', multi: '⚔️ 多人模式', twoPlayer: '👥 二人', threePlayer: '👥 三人', fourPlayer: '👥 四人',
+    newGame: '🎮 新游戏', continue: '▶ 继续游戏', enterRoom: '🎮 进入房间',
+    room: '🏠 游戏房间', createRoom: '🏗 创建房间', joinRoom: '🔗 加入房间',
+    roomCodeHint: '点击下方按钮生成房号', shareHint: '请将房号发给好友', inputRoom: '输入房号',
+    join: '加入', ready: '✅ 准备', unready: '取消准备', leaveRoom: '退出房间', back: '← 返回',
+    waitingJoin: '等待玩家加入...', playerJoined: '玩家已加入！', selectCreateJoin: '选择创建或加入房间',
+    allReady: '全员就绪，游戏即将开始！',
+    score: '🏆 分数', high: '👑 最高', clears: '📊 消除', combo: '🔥 连击', round: '🔄 回合', status: '🎯 状态',
+    yourTurn: '你的回合', waiting: '等待中', waitOthers: '等待其他玩家落子...', cantPlace: '无法放置，等待下一轮...',
+    gameOver: '游戏结束', matchEnd: '对局结束', finalScore: '最终得分: ', backMenu: '点击"菜单"返回首页',
+    undo: '↩ 撤销', menu: '🏠 菜单',
+    player: '玩家', you: '你', opponent: '对方', readyStatus: '已准备', notReady: '未准备', waitingP: '等待加入...',
+    createRoomCard: '📋 创建房间', joinRoomCard: '🔗 加入房间',
+    howToTitle: '🎮 玩法介绍',
+    howToQ1: '如何单人玩？',
+    howToA1: '选普通或困难模式，拖拽方块到8×8棋盘上。填满一行或一列即可消除，方块放不下时游戏结束。',
+    howToQ2: '如何和朋友对战？',
+    howToA2: '选多人模式 → 创建房间 → 把4位房号发给朋友 → 朋友点加入房间 → 双方点准备 → 开始！',
+    howToQ3: '多人模式规则？',
+    howToA3: '2人各2块、3人各1块、4人各1块。轮到你的回合时，拖自己的方块到棋盘上。放完你的方块后自动轮到下一位。',
+    howToQ4: '如何获得高分？',
+    howToA4: '一次消除的行/列越多，分越高！连击也会有额外加分。',
+    howToClose: '知道了',
+    reconnect: '连接断开，尝试重连...', playerDC: '已断开', playerRC: '已重连！', roomClosed: '房主已退出，房间关闭',
+    playerDCtimeout: '已断开(超时)', gameRestored: '游戏已恢复！',
+  },
+  en: {
+    appTitle: 'Block Puzzle', appSubtitle: '8×8 Board · Row & Column Clear', highScore: 'High Score', selectMode: 'Select Mode',
+    normal: '⚡ Normal', hard: '🔥 Hard', multi: '⚔️ Multiplayer', twoPlayer: '👥 2 Players', threePlayer: '👥 3 Players', fourPlayer: '👥 4 Players',
+    newGame: '🎮 New Game', continue: '▶ Continue', enterRoom: '🎮 Enter Room',
+    room: '🏠 Game Room', createRoom: '🏗 Create Room', joinRoom: '🔗 Join Room',
+    roomCodeHint: 'Click below to generate code', shareHint: 'Share this code with a friend', inputRoom: 'Enter room code',
+    join: 'Join', ready: '✅ Ready', unready: 'Cancel Ready', leaveRoom: 'Leave Room', back: '← Back',
+    waitingJoin: 'Waiting for players...', playerJoined: 'Player joined!', selectCreateJoin: 'Create or join a room',
+    allReady: 'Everyone is ready! Starting game...',
+    score: '🏆 Score', high: '👑 Best', clears: '📊 Clears', combo: '🔥 Combo', round: '🔄 Round', status: '🎯 Status',
+    yourTurn: 'Your turn', waiting: 'Waiting', waitOthers: 'Waiting for other players...', cantPlace: "Cannot place, waiting for next round...",
+    gameOver: 'Game Over', matchEnd: 'Match Over', finalScore: 'Final Score: ', backMenu: 'Press Menu to return home',
+    undo: '↩ Undo', menu: '🏠 Menu',
+    player: 'Player', you: 'You', opponent: 'Opponent', readyStatus: 'Ready', notReady: 'Not Ready', waitingP: 'Waiting...',
+    createRoomCard: '📋 Create Room', joinRoomCard: '🔗 Join Room',
+    howToTitle: '🎮 How to Play',
+    howToQ1: 'How to play solo?',
+    howToA1: 'Choose Normal or Hard mode. Drag pieces onto the 8×8 board. Fill a row or column to clear it. Game ends when no piece fits.',
+    howToQ2: 'How to play with a friend?',
+    howToA2: 'Choose Multiplayer → Create Room → share the 4-digit code → friend joins → both tap Ready → start!',
+    howToQ3: 'Multiplayer rules?',
+    howToA3: '2P: 2 pieces each. 3P/4P: 1 piece each. On your turn, drag YOUR pieces onto the board. After placing all your pieces, the next player goes.',
+    howToQ4: 'How to score high?',
+    howToA4: 'The more rows/columns cleared at once, the more points! Combos give bonus points.',
+    howToClose: 'Got it',
+    reconnect: 'Connection lost, reconnecting...', playerDC: 'disconnected', playerRC: 'reconnected!', roomClosed: 'Host left, room closed',
+    playerDCtimeout: 'disconnected (timeout)', gameRestored: 'Game restored!',
+  },
+  es: {
+    appTitle: 'Bloques', appSubtitle: 'Tablero 8×8 · Elimina Filas y Columnas', highScore: 'Puntuación Máxima', selectMode: 'Elegir Modo',
+    normal: '⚡ Normal', hard: '🔥 Difícil', multi: '⚔️ Multijugador', twoPlayer: '👥 2 Jugadores', threePlayer: '👥 3 Jugadores', fourPlayer: '👥 4 Jugadores',
+    newGame: '🎮 Nuevo Juego', continue: '▶ Continuar', enterRoom: '🎮 Entrar Sala',
+    room: '🏠 Sala de Juego', createRoom: '🏗 Crear Sala', joinRoom: '🔗 Unirse a Sala',
+    roomCodeHint: 'Haz clic para generar código', shareHint: 'Comparte este código con un amigo', inputRoom: 'Ingresa el código',
+    join: 'Unirse', ready: '✅ Listo', unready: 'Cancelar', leaveRoom: 'Salir', back: '← Volver',
+    waitingJoin: 'Esperando jugadores...', playerJoined: '¡Jugador conectado!', selectCreateJoin: 'Crea o únete a una sala',
+    allReady: '¡Todos listos! Comenzando...',
+    score: '🏆 Puntos', high: '👑 Récord', clears: '📊 Líneas', combo: '🔥 Combo', round: '🔄 Ronda', status: '🎯 Estado',
+    yourTurn: 'Tu turno', waiting: 'Esperando', waitOthers: 'Esperando a otros jugadores...', cantPlace: 'No se puede colocar, esperando...',
+    gameOver: 'Fin del Juego', matchEnd: 'Fin de la Partida', finalScore: 'Puntuación Final: ', backMenu: 'Presiona Menú para volver',
+    undo: '↩ Deshacer', menu: '🏠 Menú',
+    player: 'Jugador', you: 'Tú', opponent: 'Oponente', readyStatus: 'Listo', notReady: 'No Listo', waitingP: 'Esperando...',
+    createRoomCard: '📋 Crear Sala', joinRoomCard: '🔗 Unirse a Sala',
+    howToTitle: '🎮 Cómo Jugar',
+    howToQ1: '¿Cómo jugar solo?',
+    howToA1: 'Elige Normal o Difícil. Arrastra las piezas al tablero 8×8. Llena una fila o columna para eliminarla. El juego termina cuando no caben más piezas.',
+    howToQ2: '¿Cómo jugar con un amigo?',
+    howToA2: 'Elige Multijugador → Crear Sala → comparte el código de 4 dígitos → tu amigo se une → ambos pulsan Listo → ¡a jugar!',
+    howToQ3: '¿Reglas del multijugador?',
+    howToA3: '2P: 2 piezas cada uno. 3P/4P: 1 pieza cada uno. En tu turno, arrastra TUS piezas al tablero. Al colocar todas, pasa al siguiente.',
+    howToQ4: '¿Cómo conseguir más puntos?',
+    howToA4: '¡Cuantas más filas/columnas elimines a la vez, más puntos! Los combos dan puntos extra.',
+    howToClose: 'Entendido',
+    reconnect: 'Conexión perdida, reconectando...', playerDC: 'desconectado', playerRC: '¡reconectado!', roomClosed: 'Anfitrión salió, sala cerrada',
+    playerDCtimeout: 'desconectado (tiempo)', gameRestored: '¡Juego restaurado!',
   }
-  // 显示/隐藏人数选择
-  homeMPCount.classList.toggle('show',gameMode==='multiplayer');
-  // 更新新游戏按钮文字
-  btnNewGame.textContent=gameMode==='multiplayer'?'🎮 进入房间':'🎮 新游戏';
-}
-function renderHomePreview(){
-  homePreview.innerHTML='';var dc=['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff922b','#cc5de8','#20c997'];var ci=0;
-  for(var r=0;r<8;r++){for(var c=0;c<8;c++){var cell=document.createElement('div');cell.className='mini-cell';if((r+c)%3===0||(r===3&&c>2&&c<6)||(c===4&&r>3&&r<7)){cell.classList.add('filled');cell.style.setProperty('--fc',dc[ci%dc.length]);ci++;}homePreview.appendChild(cell);}}
-}
-function hasSaveData(){try{return !!localStorage.getItem('blockgame_v5');}catch(e){return false;}}
-
-// ==================== SINGLE PLAYER STATE ====================
-var board=[],score=0,linesCleared=0,combo=0,gameOver=false;
-var currentPieces=[null,null,null],selectedIdx=-1,previewCells=[],history=[],clearing=false;
-
-// ==================== MULTIPLAYER STATE ====================
-var MP={
-  active:false, playerCount:2, ws:null, room:null, token:null,
-  isHost:false, playerId:null, playerOrder:[], myPieceIndices:[],
-  turn:null, round:0, placedCount:0, readyStates:{}, connectedStates:{},
-  highScore:0, reconnecting:false, gameStarted:false
 };
 
-// ==================== BOARD FUNCTIONS ====================
-function createBoard(){board=[];for(var r=0;r<BOARD;r++){board[r]=[];for(var c=0;c<BOARD;c++)board[r][c]=null;}}
-function canPlace(matrix,row,col,bd){if(!bd)bd=board;for(var r=0;r<matrix.length;r++)for(var c=0;c<matrix[r].length;c++){if(!matrix[r][c])continue;var br=row+r,bc=col+c;if(br<0||br>=BOARD||bc<0||bc>=BOARD)return false;if(bd[br][bc]!==null)return false;}return true;}
-function canPlaceAnyForPiece(idx){var m=SHAPES[idx];for(var r=0;r<BOARD;r++)for(var c=0;c<BOARD;c++)if(canPlace(m,r,c))return true;return false;}
-function canPlaceAny(){if(MP.active){for(var i=0;i<MP.myPieceIndices.length;i++){var m=SHAPES[currentPieces[MP.myPieceIndices[i]]];for(var r=0;r<BOARD;r++)for(var c=0;c<BOARD;c++)if(canPlace(m,r,c))return true;}return false;}else{for(var i=0;i<3;i++){if(currentPieces[i]===null)continue;var m=SHAPES[currentPieces[i]];for(var r=0;r<BOARD;r++)for(var c=0;c<BOARD;c++)if(canPlace(m,r,c))return true;}return false;}}
+function t(key) { return (T[LANG] && T[LANG][key]) || (T.en && T.en[key]) || key; }
 
-// ==================== RENDER ====================
-function renderBoard(){
-  boardFrame.innerHTML='';
-  for(var r=0;r<BOARD;r++){var row=document.createElement('div');row.className='board-row';
-    for(var c=0;c<BOARD;c++){var cell=document.createElement('div');cell.className='board-cell';cell.setAttribute('data-r',r);cell.setAttribute('data-c',c);cell.style.setProperty('--cs',CELL+'px');
-      if(board[r][c]){cell.classList.add('filled');cell.style.background=board[r][c];}
-      for(var pi=0;pi<previewCells.length;pi++)if(previewCells[pi].r===r&&previewCells[pi].c===c){cell.classList.add('preview');break;}
-      (function(rr,cc){cell.addEventListener('click',function(e){e.stopPropagation();onBoardClick(rr,cc);});cell.addEventListener('pointerenter',function(){if(dragPieceIdx<0)updatePreviewForHover(rr,cc);});})(r,c);
-      row.appendChild(cell);}
-    boardFrame.appendChild(row);}
+function applyLanguage() {
+  document.title = t('appTitle');
+  var homeTitle = document.querySelector('.home-title'); if (homeTitle) homeTitle.textContent = t('appTitle');
+  var homeSub = document.querySelector('.home-subtitle'); if (homeSub) homeSub.textContent = t('appSubtitle');
+  var hsLabel = document.querySelector('.hs-label'); if (hsLabel) hsLabel.textContent = t('highScore');
+  var modeLabel = document.querySelector('.home-mode-label'); if (modeLabel) modeLabel.textContent = t('selectMode');
+  var normalBtn = document.querySelector('[data-mode="normal"]'); if (normalBtn) normalBtn.textContent = t('normal');
+  var hardBtn = document.querySelector('[data-mode="hard"]'); if (hardBtn) hardBtn.textContent = t('hard');
+  var multiBtn = document.querySelector('[data-mode="multiplayer"]'); if (multiBtn) multiBtn.textContent = t('multi');
+  var mpBtns = homeMPCount.querySelectorAll('.home-mp-btn');
+  if (mpBtns[0]) mpBtns[0].textContent = t('twoPlayer');
+  if (mpBtns[1]) mpBtns[1].textContent = t('threePlayer');
+  if (mpBtns[2]) mpBtns[2].textContent = t('fourPlayer');
+  var newGameText = gameMode === 'multiplayer' ? t('enterRoom') : t('newGame');
+  if (btnNewGame) btnNewGame.textContent = newGameText;
+  if (btnContinue) btnContinue.textContent = t('continue');
+  var roomTitle = document.querySelector('.room-title'); if (roomTitle) roomTitle.textContent = t('room');
+  var roomCreateH3 = roomCreateCard.querySelector('h3'); if (roomCreateH3) roomCreateH3.textContent = t('createRoomCard');
+  var roomJoinH3 = roomJoinCard.querySelector('h3'); if (roomJoinH3) roomJoinH3.textContent = t('joinRoomCard');
+  if (roomJoinInput) roomJoinInput.placeholder = t('inputRoom');
+  if (btnCreateRoom) btnCreateRoom.textContent = t('createRoom');
+  if (btnJoinRoom) btnJoinRoom.textContent = t('join');
+  if (btnReady) btnReady.textContent = t('ready');
+  if (btnUnready) btnUnready.textContent = t('unready');
+  if (btnLeaveRoom) btnLeaveRoom.textContent = t('leaveRoom');
+  if (btnRoomBack) btnRoomBack.textContent = t('back');
+  var statHeaders = gameStats.querySelectorAll('h3');
+  if (statHeaders[0]) statHeaders[0].textContent = t('score');
+  if (statHeaders[1]) statHeaders[1].textContent = t('high');
+  if (statHeaders[2]) statHeaders[2].textContent = t('clears');
+  if (statHeaders[3]) statHeaders[3].textContent = t('combo');
+  if (btnUndo) btnUndo.textContent = t('undo');
+  if (btnToMenu) btnToMenu.textContent = t('menu');
+  if (goTitle) goTitle.textContent = MP.active ? t('matchEnd') : t('gameOver');
+  var goSub = document.querySelector('.go-sub'); if (goSub) goSub.textContent = t('backMenu');
+  var flags = langSelector.querySelectorAll('.lang-flag');
+  flags.forEach(function(f) { f.classList.toggle('active', f.getAttribute('data-lang') === LANG); });
 }
-
-function getPieceCount(){return MP.active?(MP.playerCount===3?3:4):3;}
-
-function renderPieces(){
-  piecesSection.innerHTML='<h3>🎯</h3>';
-  var pc=getPieceCount();
-  var maxRows=0;for(var i=0;i<pc;i++){if(currentPieces[i]!==null){var mm=SHAPES[currentPieces[i]];if(mm.length>maxRows)maxRows=mm.length;}}
-  var pieceCell=Math.floor(70/Math.max(maxRows,1));pieceCell=Math.max(12,Math.min(pieceCell,24));
-
-  for(var i=0;i<pc;i++){
-    var slot=document.createElement('div');slot.className='piece-slot';
-    if(i===selectedIdx)slot.classList.add('selected');
-
-    // 多人模式归属
-    if(MP.active&&currentPieces[i]!==null){
-      var isMine=MP.myPieceIndices.indexOf(i)!==-1;
-      slot.classList.add(isMine?'my-piece':'opponent-piece');
-      if(!isMine){slot.style.cursor='default';}
-      // 归属标签
-      var badge=document.createElement('div');badge.className='owner-badge'+(isMine?'':' opp');
-      badge.textContent=isMine?'你的':(MP.playerOrder[0]===MP.playerId?MP.playerOrder[1]:MP.playerOrder[0])==='B'?'玩家B':'对方';
-      slot.appendChild(badge);
-    }
-
-    if(currentPieces[i]!==null){
-      var shapeIdx=currentPieces[i],matrix=SHAPES[shapeIdx],color=getColor(shapeIdx);
-      var inner=document.createElement('div');inner.className='piece-inner';inner.style.transform='scale('+(pieceCell/24)+')';
-      for(var r=0;r<matrix.length;r++){var prow=document.createElement('div');prow.className='prow';
-        for(var c=0;c<matrix[r].length;c++){var pcell=document.createElement('div');pcell.className='pcell';pcell.style.setProperty('--cs','24px');if(matrix[r][c]){pcell.classList.add('filled');pcell.style.background=color;}prow.appendChild(pcell);}
-        inner.appendChild(prow);}
-      slot.appendChild(inner);
-      var isMine=!MP.active||MP.myPieceIndices.indexOf(i)!==-1;
-      if(isMine){(function(idx){slot.addEventListener('pointerdown',function(e){e.preventDefault();selectPiece(idx);startDrag(e,idx);});slot.addEventListener('click',function(e){e.stopPropagation();selectPiece(idx);});})(i);}
-    }else{
-      slot.innerHTML='<span style=color:#3a3a3a;font-size:.5rem>已放</span>';slot.style.cursor='default';
-    }
-    piecesSection.appendChild(slot);
-  }
-}
-
-function selectPiece(idx){
-  if(MP.active&&MP.myPieceIndices.indexOf(idx)===-1)return;
-  if(currentPieces[idx]===null)return;
-  selectedIdx=idx;renderPieces();renderBoard();
-}
-
-// ==================== PREVIEW ====================
-function updatePreviewForHover(targetR,targetC){
-  previewCells=[];if(clearing)return;if(MP.active&&MP.turn!==MP.playerId)return;
-  if(selectedIdx<0||currentPieces[selectedIdx]===null)return;
-  var matrix=SHAPES[currentPieces[selectedIdx]];
-  var sr=targetR-Math.floor(matrix.length/2),sc=targetC-Math.floor(matrix[0].length/2);
-  if(canPlace(matrix,sr,sc)){for(var r=0;r<matrix.length;r++)for(var c=0;c<matrix[r].length;c++)if(matrix[r][c])previewCells.push({r:sr+r,c:sc+c});}
-  renderBoard();
-}
-
-// ==================== PLACE PIECE ====================
-function placePiece(shapeIdx,row,col){
-  if(shapeIdx===null||clearing)return false;
-  if(MP.active)return placePieceMP(shapeIdx,row,col);
-
-  // 单机模式
-  var matrix=SHAPES[shapeIdx];if(!canPlace(matrix,row,col))return false;
-  clearing=true;history.push({board:board.map(function(r){return r.slice()}),score:score,linesCleared:linesCleared,combo:combo,pieces:currentPieces.slice(),selectedIdx:selectedIdx});if(history.length>50)history.shift();
-  var color=getColor(shapeIdx);for(var r=0;r<matrix.length;r++)for(var c=0;c<matrix[r].length;c++)if(matrix[r][c])board[row+r][col+c]=color;
-  var cc=0;for(var rr=0;rr<matrix.length;rr++)for(var ccc=0;ccc<matrix[rr].length;ccc++)if(matrix[rr][ccc])cc++;score+=cc*5;
-  currentPieces[selectedIdx]=null;clearing=false;checkClears();
-  if(currentPieces[0]===null&&currentPieces[1]===null&&currentPieces[2]===null)refillPieces();
-  else{selectedIdx=-1;for(var i=0;i<3;i++){if(currentPieces[i]!==null){selectedIdx=i;break;}}}
-  updateDisplay();renderPieces();previewCells=[];renderBoard();
-  if(!clearing){if(!canPlaceAny())triggerGameOver();else saveGame();}return true;
-}
-
-function placePieceMP(shapeIdx,row,col){
-  if(clearing||!MP.active||MP.turn!==MP.playerId)return false;
-  if(MP.myPieceIndices.indexOf(selectedIdx)===-1)return false;
-  // 发送到服务器
-  sendMsg({type:'place_piece',shapeIdx:shapeIdx,row:row,col:col});
-  // 本地预览（不等服务器响应，立即显示）
-  var matrix=SHAPES[shapeIdx],color=getColor(shapeIdx);
-  for(var r=0;r<matrix.length;r++)for(var c=0;c<matrix[r].length;c++)if(matrix[r][c])board[row+r][col+c]=color;
-  currentPieces[selectedIdx]=null;MP.placedCount++;
-  // 检查是否放完了我的所有块
-  var myRemaining=false;
-  for(var i=0;i<MP.myPieceIndices.length;i++){if(currentPieces[MP.myPieceIndices[i]]!==null){myRemaining=true;break;}}
-  // 找下一个可选块
-  selectedIdx=-1;
-  for(var i=0;i<getPieceCount();i++){if(currentPieces[i]!==null&&MP.myPieceIndices.indexOf(i)!==-1){selectedIdx=i;break;}}
-  updateDisplay();renderPieces();previewCells=[];renderBoard();
-  if(!myRemaining){
-    // 我放完了，显示等待遮罩
-    mpWaiting.style.display='flex';
-    mpwText.textContent='等待其他玩家落子...';
-    mpwSub.textContent='';
-  }
-  return true;
-}
-
-// ==================== CHECK CLEARS (SP) ====================
-function checkClears(){
-  var rowsToClear=[],colsToClear=[];
-  for(var r=0;r<BOARD;r++){var f=true;for(var c=0;c<BOARD;c++)if(board[r][c]===null){f=false;break;}if(f)rowsToClear.push(r);}
-  for(var c=0;c<BOARD;c++){var f=true;for(var r=0;r<BOARD;r++)if(board[r][c]===null){f=false;break;}if(f)colsToClear.push(c);}
-  var total=rowsToClear.length+colsToClear.length;if(total===0)return;clearing=true;
-  var flash={};for(var ri=0;ri<rowsToClear.length;ri++)for(var cc2=0;cc2<BOARD;cc2++)flash[rowsToClear[ri]+','+cc2]=true;
-  for(var ci=0;ci<colsToClear.length;ci++)for(var rr=0;rr<BOARD;rr++)flash[rr+','+colsToClear[ci]]=true;
-  renderBoard();var all=boardFrame.querySelectorAll('.board-cell');for(var i=0;i<all.length;i++){var el=all[i];if(flash[el.getAttribute('data-r')+','+el.getAttribute('data-c')])el.classList.add('clearing');}
-  setTimeout(function(){
-    for(var ri=0;ri<rowsToClear.length;ri++)for(var cc3=0;cc3<BOARD;cc3++)board[rowsToClear[ri]][cc3]=null;
-    for(var ci=0;ci<colsToClear.length;ci++)for(var rr=0;rr<BOARD;rr++)board[rr][colsToClear[ci]]=null;
-    var base={1:100,2:300,3:600,4:1000,5:1500,6:2100,7:2800,8:3600};score+=(base[total]||total*500)*(combo+1);combo++;linesCleared+=total;
-    showCombo(total);clearing=false;updateDisplay();renderBoard();if(!canPlaceAny())triggerGameOver();else saveGame();
-  },350);
-}
-
-// ==================== ANIMATE CLEARS (for MP server updates) ====================
-function animateClears(rows,cols,callback){
-  var flash={};for(var ri=0;ri<rows.length;ri++)for(var c=0;c<BOARD;c++)flash[rows[ri]+','+c]=true;
-  for(var ci=0;ci<cols.length;ci++)for(var r=0;r<BOARD;r++)flash[r+','+cols[ci]]=true;
-  renderBoard();var all=boardFrame.querySelectorAll('.board-cell');for(var i=0;i<all.length;i++){var el=all[i];if(flash[el.getAttribute('data-r')+','+el.getAttribute('data-c')])el.classList.add('clearing');}
-  setTimeout(function(){if(callback)callback();},350);
-}
-
-function showCombo(count){var el=document.createElement('div');el.className='combo-text';el.textContent=count>1?'x'+count:(count===1?'✓':'');document.getElementById('boardContainer').appendChild(el);setTimeout(function(){el.remove();},800);}
-
-// ==================== BOARD CLICK ====================
-function onBoardClick(r,c){
-  if(gameOver||clearing)return;
-  if(MP.active&&MP.turn!==MP.playerId)return;
-  if(selectedIdx<0||currentPieces[selectedIdx]===null)return;
-  var idx=currentPieces[selectedIdx],matrix=SHAPES[idx];
-  var sr=r-Math.floor(matrix.length/2),sc=c-Math.floor(matrix[0].length/2);
-  if(canPlace(matrix,sr,sc)){placePiece(idx,sr,sc);return;}
-  var bestR=-1,bestC=-1,bestD=999;for(var tr=0;tr<BOARD;tr++)for(var tc=0;tc<BOARD;tc++)if(canPlace(matrix,tr,tc)){var d=Math.abs(tr-sr)+Math.abs(tc-sc);if(d<bestD){bestD=d;bestR=tr;bestC=tc;}}
-  if(bestD<=4){placePiece(idx,bestR,bestC);return;}flashInvalid(r,c);
-}
-
-function flashInvalid(r,c){var all=boardFrame.querySelectorAll('.board-cell');for(var i=0;i<all.length;i++){var el=all[i];if(el.getAttribute('data-r')===String(r)&&el.getAttribute('data-c')===String(c)){el.classList.add('invalid');setTimeout(function(){el.classList.remove('invalid');},200);}}}
-
-// ==================== GAME OVER ====================
-function triggerGameOver(msg){
-  gameOver=true;
-  goScoreEl.textContent=msg||('最终得分: '+score);
-  goTitle.textContent=MP.active?'对局结束':'游戏结束';
-  gameOverEl.classList.add('active');
-  if(!MP.active&&score>highScore){highScore=score;highScoreEl.textContent=highScore;try{localStorage.setItem('blockgame_highscore',String(highScore));}catch(e){}}
-  if(!MP.active)saveGame();
-}
-
-// ==================== REFILL (SP) ====================
-function refillPieces(){var used={},largeCount=0;for(var i=0;i<3;i++){var idx,t=0;do{idx=pickFittingShape();t++;if(used[idx])continue;if(cellCount(idx)>=6&&largeCount>0)continue;break;}while(t<50);used[idx]=true;if(cellCount(idx)>=6)largeCount++;currentPieces[i]=idx;}var nf=true;for(var i=0;i<3;i++){if(shapeFitsAnywhere(currentPieces[i])){nf=false;break;}}if(nf){for(var si=0;si<SMALL.length;si++){if(shapeFitsAnywhere(SMALL[si])){currentPieces[0]=SMALL[si];break;}}}selectedIdx=0;}
-
-// ==================== REFILL (MP - from server) ====================
-function mpRefill(pieces,assignments,turn,round){
-  var pc=pieces.length;
-  // 确保数组长度正确
-  while(currentPieces.length<pc)currentPieces.push(null);
-  while(currentPieces.length>pc)currentPieces.pop();
-  for(var i=0;i<pc;i++)currentPieces[i]=i<pieces.length?pieces[i]:null;
-  MP.myPieceIndices=assignments[MP.playerId]||[];
-  MP.turn=turn;
-  MP.round=round;
-  MP.placedCount=0;
-  // 选第一个可选块
-  selectedIdx=-1;
-  for(var i=0;i<pc;i++){if(currentPieces[i]!==null&&MP.myPieceIndices.indexOf(i)!==-1){selectedIdx=i;break;}}
-  // 隐藏等待遮罩
-  mpWaiting.style.display='none';
-  // 更新等待文字
-  mpwText.textContent=MP.turn===MP.playerId?'轮到你了！':'等待其他玩家落子...';
-  updateDisplay();renderPieces();previewCells=[];renderBoard();
-
-  // 检查是否能放置
-  if(MP.turn===MP.playerId){
-    var canMove=false;
-    for(var i=0;i<MP.myPieceIndices.length;i++){
-      var idx=MP.myPieceIndices[i];
-      if(currentPieces[idx]!==null&&canPlaceAnyForPiece(currentPieces[idx])){canMove=true;break;}
-    }
-    if(!canMove){
-      // 无法放置任何块，跳过本轮
-      mpWaiting.style.display='flex';
-      mpwText.textContent='无法放置，等待下一轮...';
-    }
-  }else{
-    mpWaiting.style.display='flex';
-  }
-}
-
-// ==================== UNDO (SP only) ====================
-function undo(){if(MP.active||gameOver||clearing)return;if(history.length===0)return;var prev=history.pop();board=prev.board;score=prev.score;linesCleared=prev.linesCleared;combo=prev.combo;currentPieces=prev.pieces;selectedIdx=prev.selectedIdx;if(selectedIdx<0)for(var i=0;i<3;i++){if(currentPieces[i]!==null){selectedIdx=i;break;}}previewCells=[];updateDisplay();renderPieces();renderBoard();saveGame();}
-
-// ==================== DISPLAY ====================
-function updateDisplay(){
-  scoreEl.textContent=score;linesEl.textContent=linesCleared;comboEl.textContent=combo;
-  if(MP.active){highScoreEl.textContent=MP.highScore;}else{highScoreEl.textContent=highScore;}
-}
-
-// ==================== SAVE/LOAD (SP only) ====================
-function saveGame(){if(MP.active)return;try{var d={board:board,score:score,linesCleared:linesCleared,combo:combo,gameOver:gameOver,currentPieces:currentPieces,history:history.slice(-20),selectedIdx:selectedIdx,mode:gameMode};localStorage.setItem('blockgame_v5',JSON.stringify(d));}catch(e){}}
-function loadGame(){if(MP.active)return false;try{var raw=localStorage.getItem('blockgame_v5');if(!raw)return false;var d=JSON.parse(raw);board=d.board;score=d.score;linesCleared=d.linesCleared;combo=d.combo;gameOver=d.gameOver;currentPieces=d.currentPieces;history=d.history||[];selectedIdx=d.selectedIdx;if(d.mode)gameMode=d.mode;if(gameOver)gameOverEl.classList.add('active');updateDisplay();renderPieces();previewCells=[];renderBoard();return true;}catch(e){return false;}}
-
-// ==================== START NEW GAME (SP) ====================
-function startNewGame(){calcSize();createBoard();score=0;linesCleared=0;combo=0;gameOver=false;previewCells=[];history=[];clearing=false;gameOverEl.classList.remove('active');refillPieces();updateDisplay();renderPieces();renderBoard();saveGame();}
-
-// ==================== DRAG ====================
-var dragClone=null,dragPieceIdx=-1;
-function startDrag(e,idx){
-  if(gameOver||clearing)return;
-  if(MP.active&&MP.turn!==MP.playerId)return;
-  if(MP.active&&MP.myPieceIndices.indexOf(idx)===-1)return;
-  dragPieceIdx=idx;selectedIdx=idx;
-  var clone=document.createElement('div');clone.className='drag-clone';clone.style.setProperty('--cs',CELL+'px');
-  var matrix=SHAPES[currentPieces[idx]],color=getColor(currentPieces[idx]);
-  for(var i=0;i<matrix.length;i++){var rdiv=document.createElement('div');rdiv.className='drow';for(var j=0;j<matrix[i].length;j++){var d=document.createElement('div');d.className='dcell';if(matrix[i][j]){d.classList.add('filled');d.style.background=color;}rdiv.appendChild(d);}clone.appendChild(rdiv);}
-  document.body.appendChild(clone);dragClone=clone;updateDrag(e);
-}
-function updateDrag(e){if(!dragClone)return;dragClone.style.left=e.clientX+'px';dragClone.style.top=e.clientY+'px';var br=boardFrame.getBoundingClientRect();var col=Math.floor((e.clientX-br.left)/CELL),row=Math.floor((e.clientY-br.top)/CELL);updatePreviewForHover(row,col);}
-function endDrag(e){
-  if(dragClone){dragClone.remove();dragClone=null;}
-  if(dragPieceIdx<0)return;
-  var br=boardFrame.getBoundingClientRect(),rx=e.clientX-br.left,ry=e.clientY-br.top,col=Math.floor(rx/CELL),row=Math.floor(ry/CELL);
-  if(rx>=0&&rx<br.width&&ry>=0&&ry<br.height){
-    var idx=currentPieces[dragPieceIdx];if(idx!==null){
-      var m=SHAPES[idx],sr=row-Math.floor(m.length/2),sc=col-Math.floor(m[0].length/2);
-      if(canPlace(m,sr,sc))placePiece(idx,sr,sc);
-      else{var bR=-1,bC=-1,bD=999;for(var tr=0;tr<BOARD;tr++)for(var tc=0;tc<BOARD;tc++)if(canPlace(m,tr,tc)){var d=Math.abs(tr-sr)+Math.abs(tc-sc);if(d<bD){bD=d;bR=tr;bC=tc;}}if(bD<=3)placePiece(idx,bR,bC);}
-    }
-  }
-  dragPieceIdx=-1;previewCells=[];renderBoard();renderPieces();
-}
-document.addEventListener('pointerup',endDrag);
-document.addEventListener('pointermove',function(e){if(dragPieceIdx>=0)updateDrag(e);});
-document.addEventListener('touchmove',function(e){if(dragPieceIdx>=0)e.preventDefault();},{passive:false});
-
-// ==================== KEYBOARD ====================
-document.addEventListener('keydown',function(e){
-  if(gamePage.classList.contains('active')===false)return;
-  if(MP.active&&MP.turn!==MP.playerId)return;
-  if(gameOver||clearing)return;
-  if(!MP.active&&e.ctrlKey&&e.key==='z'){e.preventDefault();undo();return;}
-  var pc=getPieceCount();
-  if(e.key==='1'||e.key==='2'||e.key==='3'||e.key==='4'){var idx=parseInt(e.key)-1;if(idx<pc&&currentPieces[idx]!==null&&(!MP.active||MP.myPieceIndices.indexOf(idx)!==-1))selectPiece(idx);return;}
-  if(selectedIdx<0||currentPieces[selectedIdx]===null)return;
-  var idx=currentPieces[selectedIdx],m=SHAPES[idx];
-  if(e.code==='Space'){e.preventDefault();var sr=Math.floor((BOARD-m.length)/2),sc=Math.floor((BOARD-m[0].length)/2);
-    if(canPlace(m,sr,sc))placePiece(idx,sr,sc);
-    else{for(var r=0;r<BOARD;r++)for(var c=0;c<BOARD;c++)if(canPlace(m,r,c)){placePiece(idx,r,c);return;}}}
-});
-
-// ==================== RESIZE ====================
-window.addEventListener('resize',function(){calcSize();if(gamePage.classList.contains('active')){renderBoard();renderPieces();}});
-
-// ==================== TOAST ====================
-function showToast(msg,isInfo){
-  var t=document.createElement('div');t.className='toast'+(isInfo?' info':'');
-  t.textContent=msg;document.body.appendChild(t);
-  setTimeout(function(){t.remove();},2000);
-}
-
-// ==================== WEBSOCKET ====================
-function connectWS(){
-  if(MP.ws&&MP.ws.readyState===1)return;
-  MP.ws=new WebSocket(WS_URL);
-  MP.ws.onopen=function(){console.log('WS connected');MP.reconnecting=false;};
-  MP.ws.onmessage=function(e){handleMsg(JSON.parse(e.data));};
-  MP.ws.onclose=function(){
-    console.log('WS closed');
-    if(MP.active&&!MP.reconnecting){
-      MP.reconnecting=true;
-      showToast('连接断开，尝试重连...',true);
-      setTimeout(function(){if(MP.active)connectWS();},3000);
-    }
-  };
-  MP.ws.onerror=function(e){console.log('WS error');};
-}
-
-function sendMsg(msg){if(MP.ws&&MP.ws.readyState===1){MP.ws.send(JSON.stringify(msg));}}
-
-function handleMsg(data){
-  switch(data.type){
-
-  case 'room_created':
-    MP.room=data.room;MP.playerId=data.playerId;MP.token=data.token;MP.playerCount=data.playerCount;
-    MP.isHost=(data.playerId==='A');
-    MP.readyStates={};MP.connectedStates={};
-    MP.readyStates[data.playerId]=false;
-    MP.connectedStates[data.playerId]=true;
-    // 应用已有玩家状态
-    if(data.existingPlayers){
-      for(var pid in data.existingPlayers){
-        MP.connectedStates[pid]=data.existingPlayers[pid].connected;
-        MP.readyStates[pid]=data.existingPlayers[pid].ready;
-      }
-    }
-    roomCodeDisplay.textContent=data.room;
-    roomCodeHint.textContent='请将房号发给好友';
-    updateRoomUI();
-    roomJoinCard.style.display=MP.isHost?'none':'';
-    roomStatus.textContent='等待玩家加入...';
-    break;
-
-  case 'player_joined':
-    MP.connectedStates[data.playerId]=true;
-    MP.readyStates[data.playerId]=false;
-    updateRoomUI();
-    roomStatus.textContent='玩家已加入！';
-    break;
-
-  case 'ready_update':
-    MP.readyStates=data.ready;
-    updateRoomUI();
-    var allReady=true;
-    for(var pid in MP.readyStates){if(!MP.readyStates[pid]){allReady=false;break;}}
-    if(allReady){roomStatus.textContent='全员就绪，游戏即将开始！';}
-    break;
-
-  case 'game_started':
-    MP.gameStarted=true;
-    initMPGame(data);
-    showPage('game');
-    break;
-
-  case 'board_update':
-    // 更新棋盘
-    board=data.board;score=data.score;linesCleared=data.linesCleared;combo=data.combo;
-    if(data.clearingRows&&data.clearingCols){
-      animateClears(data.clearingRows,data.clearingCols,function(){
-        renderBoard();updateDisplay();
-        if(MP.turn===MP.playerId){
-          mpWaiting.style.display='none';
-        }
-      });
-    }else{
-      updateDisplay();
-      if(MP.turn===MP.playerId){
-        mpWaiting.style.display='none';
-      }
-    }
-    // 更新最高分
-    if(score>MP.highScore){MP.highScore=score;highScoreEl.textContent=MP.highScore;}
-    break;
-
-  case 'pieces_refill':
-    mpRefill(data.pieces,data.assignments,data.turn,data.round);
-    MP.turnOrder=data.turnOrder||MP.playerOrder;
-    break;
-
-  case 'turn_change':
-    MP.turn=data.turn;
-    MP.placedCount=0;
-    mpWaiting.style.display=MP.turn===MP.playerId?'none':'flex';
-    mpwText.textContent=MP.turn===MP.playerId?'轮到你了！':'等待其他玩家落子...';
-    mpwSub.textContent='';
-    previewCells=[];renderBoard();renderPieces();
-    break;
-
-  case 'game_over':
-    if(data.highScore>MP.highScore){MP.highScore=data.highScore;highScoreEl.textContent=MP.highScore;}
-    if(data.highScore>highScore){highScore=data.highScore;try{localStorage.setItem('blockgame_highscore',String(highScore));}catch(e){}}
-    triggerGameOver('最终得分: '+data.finalScore);
-    mpWaiting.style.display='none';
-    break;
-
-  case 'player_disconnected':
-    MP.connectedStates[data.playerId]=false;
-    showToast('玩家'+(data.playerId==='A'?'1':data.playerId==='B'?'2':data.playerId==='C'?'3':'4')+' 已断开'+(data.timeout?'(超时)':''));
-    if(MP.gameStarted)updateRoomUI();
-    break;
-
-  case 'player_reconnected':
-    MP.connectedStates[data.playerId]=true;
-    MP.readyStates[data.playerId]=true;
-    showToast('玩家已重连！',true);
-    break;
-
-  case 'room_closed':
-    showToast('房主已退出，房间关闭');
-    resetMP();showPage('home');
-    break;
-
-  case 'game_restored':
-    // 重连恢复
-    board=data.board;score=data.score;linesCleared=data.linesCleared;combo=data.combo;
-    MP.turn=data.turn;MP.round=data.round;MP.highScore=data.highScore||MP.highScore;
-    MP.playerOrder=data.turnOrder||data.playerOrder||MP.playerOrder;
-    MP.myPieceIndices=(data.assignments||{})[MP.playerId]||[];
-    MP.placedThisTurn=data.placedThisTurn||{};
-    MP.placedCount=MP.placedThisTurn[MP.playerId]||0;
-    var pc=getPieceCount();
-    while(currentPieces.length<pc)currentPieces.push(null);
-    for(var i=0;i<pc;i++)currentPieces[i]=i<(data.pieces||[]).length?data.pieces[i]:null;
-    // 更新已放置的块为null
-    for(var i=0;i<pc;i++){if(currentPieces[i]!==null&&MP.myPieceIndices.indexOf(i)!==-1){var alreadyPlaced=MP.placedCount;for(var j=0;j<MP.myPieceIndices.length;j++){if(MP.myPieceIndices[j]===i&&j<alreadyPlaced){currentPieces[i]=null;break;}}}}
-    selectedIdx=-1;
-    for(var i=0;i<pc;i++){if(currentPieces[i]!==null&&MP.myPieceIndices.indexOf(i)!==-1){selectedIdx=i;break;}}
-    MP.gameStarted=true;
-    gameOver=false;gameOverEl.classList.remove('active');
-    mpWaiting.style.display=MP.turn===MP.playerId?'none':'flex';
-    btnUndo.disabled=true;
-    updateDisplay();renderPieces();previewCells=[];renderBoard();
-    showPage('game');
-    showToast('游戏已恢复！',true);
-    break;
-
-  case 'error':
-    showToast(data.message);
-    break;
-  }
-}
-
-// ==================== INIT MP GAME ====================
-function initMPGame(data){
-  board=data.board;score=data.score;linesCleared=data.linesCleared||0;combo=data.combo||0;
-  MP.turn=data.turn;MP.round=data.round;MP.highScore=data.highScore||0;
-  MP.playerOrder=data.turnOrder||MP.playerOrder;
-  gameOver=false;gameOverEl.classList.remove('active');
-  mpWaiting.style.display='none';
-  btnUndo.disabled=true;
-  // 图形
-  var pc=getPieceCount();
-  while(currentPieces.length<pc)currentPieces.push(null);
-  while(currentPieces.length>pc)currentPieces.pop();
-  for(var i=0;i<pc;i++)currentPieces[i]=data.pieces[i];
-  MP.myPieceIndices=(data.assignments||{})[MP.playerId]||[];
-  MP.placedCount=0;
-  selectedIdx=-1;
-  for(var i=0;i<pc;i++){if(currentPieces[i]!==null&&MP.myPieceIndices.indexOf(i)!==-1){selectedIdx=i;break;}}
-  updateDisplay();highScoreEl.textContent=MP.highScore;
-  statHighScore.querySelector('h3').textContent='👑 最高';
-  // 添加多人信息显示
-  updateMPStats();
-  renderPieces();renderBoard();
-  if(MP.turn!==MP.playerId){
-    mpWaiting.style.display='flex';
-    mpwText.textContent='等待其他玩家落子...';
-  }
-}
-
-function updateMPStats(){
-  // 在统计栏添加回合和状态
-  var existingTurn=document.getElementById('statTurn'),existingWho=document.getElementById('statWho');
-  if(existingTurn)existingTurn.remove();if(existingWho)existingWho.remove();
-
-  var turnBox=document.createElement('div');turnBox.className='stat-box';turnBox.id='statTurn';
-  turnBox.innerHTML='<h3>🔄 回合</h3><div class="val" id="valRound">'+MP.round+'</div>';
-  var whoBox=document.createElement('div');whoBox.className='stat-box';whoBox.id='statWho';
-  whoBox.innerHTML='<h3>🎯 状态</h3><div class="val green" id="valWho">'+(MP.turn===MP.playerId?'你的回合':'等待中')+'</div>';
-  gameStats.appendChild(turnBox);gameStats.appendChild(whoBox);
-}
-
-// ==================== RESET MP ====================
-function resetMP(){
-  if(MP.ws){try{MP.ws.close();}catch(e){}}
-  MP.active=false;MP.ws=null;MP.room=null;MP.token=null;MP.isHost=false;MP.playerId=null;
-  MP.turn=null;MP.round=0;MP.placedCount=0;MP.readyStates={};MP.connectedStates={};
-  MP.myPieceIndices=[];MP.reconnecting=false;MP.gameStarted=false;
-  mpWaiting.style.display='none';gameOver=false;
-  // 清除多人统计
-  var st=document.getElementById('statTurn'),sw=document.getElementById('statWho');
-  if(st)st.remove();if(sw)sw.remove();
-  statHighScore.querySelector('h3').textContent='👑 最高';
-  // 恢复3块模式
-  currentPieces=[null,null,null];
-  selectedIdx=-1;previewCells=[];history=[];
-  gameOverEl.classList.remove('active');
-  btnUndo.disabled=false;btnUndo.style.display='';
-}
-
-// ==================== ROOM UI ====================
-function updateRoomUI(){
-  if(!MP.active)return;
-  var order=MP.playerOrder||['A','B','C','D'];
-  playerList.innerHTML='';
-  for(var i=0;i<order.length;i++){
-    var pid=order[i],isMe=pid===MP.playerId;
-    var isConnected=MP.connectedStates[pid]===true;
-    var isReady=MP.readyStates[pid]===true;
-    var row=document.createElement('div');row.className='player-row';
-    var avatarClass=isMe?'you':(isConnected?'other':'wait');
-    var avatarText=isMe?'你':('P'+(i+1));
-    var nameText=isMe?'玩家'+(i+1)+' (你)':(isConnected?'玩家'+(i+1):'等待加入...');
-    var statusText=isConnected?(isReady?'已准备':'未准备'):'';
-    row.innerHTML='<div class="p-avatar '+avatarClass+'">'+avatarText+'</div>'+
-      '<div class="p-info"><div class="p-name">'+nameText+'</div><div class="p-status">'+statusText+'</div></div>'+
-      '<div class="p-dot '+(isConnected?'online':'offline')+'"></div>'+
-      '<div class="p-ready '+(isReady?'yes':'no')+'">'+(isReady?'✓':'—')+'</div>';
-    playerList.appendChild(row);
-  }
-
-  // 准备按钮
-  var amIReady=MP.readyStates[MP.playerId]===true;
-  var allConnected=true;
-  for(var i=0;i<order.length;i++){if(!MP.connectedStates[order[i]]){allConnected=false;break;}}
-  btnReady.disabled=!allConnected||amIReady;
-  btnReady.style.display=amIReady?'none':'';
-  btnUnready.disabled=!amIReady;
-  btnUnready.style.display=amIReady?'':'none';
-}
-
-function enterMPRoom(){
-  MP.active=true;MP.gameStarted=false;
-  MP.playerOrder=['A','B','C','D'].slice(0,MP.playerCount);
-  MP.readyStates={};MP.connectedStates={};
-  for(var i=0;i<MP.playerOrder.length;i++){MP.connectedStates[MP.playerOrder[i]]=false;MP.readyStates[MP.playerOrder[i]]=false;}
-  // 重置UI
-  roomCreateCard.style.display='';roomJoinCard.style.display='';
-  roomCodeDisplay.textContent='----';
-  roomCodeHint.textContent='点击下方按钮生成房号';
-  roomJoinInput.value='';
-  btnCreateRoom.disabled=false;btnJoinRoom.disabled=false;
-  btnReady.disabled=true;btnReady.style.display='';
-  btnUnready.disabled=true;btnUnready.style.display='none';
-  playerList.innerHTML='';roomStatus.textContent='选择创建或加入房间';
-  showPage('room');
-}
-
-// ==================== BUTTON HANDLERS ====================
-
-// Home page
-btnNewGame.addEventListener('click',function(){
-  if(gameMode==='multiplayer'){enterMPRoom();return;}
-  startNewGame();showPage('game');
-});
-btnContinue.addEventListener('click',function(){
-  if(gameMode==='multiplayer'){enterMPRoom();return;}
-  if(!hasSaveData())return;if(!loadGame()){startNewGame();}showPage('game');
-});
-btnMPMode.addEventListener('click',function(){
-  gameMode='multiplayer';
-  homeMPCount.classList.add('show');
-  updateHomePage();
-});
-
-homeModes.addEventListener('click',function(e){
-  if(!e.target.classList.contains('home-mode-btn'))return;
-  var mode=e.target.getAttribute('data-mode');
-  if(mode==='multiplayer'){
-    gameMode='multiplayer';
-    homeMPCount.classList.add('show');
-  }else{
-    gameMode=mode;
-    homeMPCount.classList.remove('show');
-  }
-  try{localStorage.setItem('blockgame_mode',gameMode);}catch(ex){}
-  updateHomePage();
-});
-
-homeMPCount.addEventListener('click',function(e){
-  if(!e.target.classList.contains('home-mp-btn'))return;
-  var btns=homeMPCount.querySelectorAll('.home-mp-btn');
-  for(var b=0;b<btns.length;b++)btns[b].classList.remove('active');
-  e.target.classList.add('active');
-  MP_PLAYER_COUNT=parseInt(e.target.getAttribute('data-count'));
-  try{localStorage.setItem('blockgame_mpcount',String(MP_PLAYER_COUNT));}catch(ex){}
-});
-
-btnToMenu.addEventListener('click',function(){
-  if(MP.active){resetMP();}
-  saveGame();showPage('home');
-});
-btnUndo.addEventListener('click',function(){if(!MP.active)undo();});
-
-// Room page
-btnCreateRoom.addEventListener('click',function(){
-  connectWS();
-  var checkWS=setInterval(function(){
-    if(MP.ws&&MP.ws.readyState===1){
-      clearInterval(checkWS);
-      MP.playerCount=MP_PLAYER_COUNT;
-      sendMsg({type:'create_room',playerCount:MP_PLAYER_COUNT,highScore:highScore});
-      btnCreateRoom.disabled=true;
-    }
-    if(MP.ws&&MP.ws.readyState===0){console.log('WS connecting...');}
-  },100);
-  // 超时处理
-  setTimeout(function(){if(MP.ws&&MP.ws.readyState!==1){showToast('连接失败，请检查网络');btnCreateRoom.disabled=false;}},10000);
-});
-
-btnJoinRoom.addEventListener('click',function(){
-  var code=roomJoinInput.value.trim();
-  if(!code||code.length!==4||!/^\d{4}$/.test(code)){showToast('请输入4位房号');return;}
-  connectWS();
-  var checkWS=setInterval(function(){
-    if(MP.ws&&MP.ws.readyState===1){
-      clearInterval(checkWS);
-      sendMsg({type:'join_room',room:code});
-      btnJoinRoom.disabled=true;
-    }
-  },100);
-});
-
-btnReady.addEventListener('click',function(){sendMsg({type:'player_ready'});});
-btnUnready.addEventListener('click',function(){sendMsg({type:'player_unready'});});
-
-btnLeaveRoom.addEventListener('click',function(){
-  if(MP.isHost&&MP.gameStarted){
-    if(!confirm('你是房主，退出将关闭房间。确定吗？'))return;
-  }
-  sendMsg({type:'leave_room'});
-  resetMP();showPage('home');
-});
-
-btnRoomBack.addEventListener('click',function(){
-  if(MP.isHost&&MP.connectedStates['B']){sendMsg({type:'leave_room'});}
-  resetMP();showPage('home');
-});
-
-// ==================== STARS ====================
-(function(){var c=document.getElementById('stars');for(var i=0;i<40;i++){var s=document.createElement('div');s.className='star';s.style.left=Math.random()*100+'%';s.style.top=Math.random()*100+'%';var sz=Math.random()*2+1;s.style.width=sz+'px';s.style.height=sz+'px';s.style.setProperty('--d',(Math.random()*3+2)+'s');s.style.setProperty('--dl',Math.random()*5+'s');c.appendChild(s);}})();
-
-// ==================== INIT ====================
-var savedMode=localStorage.getItem('blockgame_mode');if(savedMode)gameMode=savedMode;
-var savedMPCount=localStorage.getItem('blockgame_mpcount');if(savedMPCount)MP_PLAYER_COUNT=parseInt(savedMPCount);
-var mpCountBtns=homeMPCount.querySelectorAll('.home-mp-btn');
-for(var b=0;b<mpCountBtns.length;b++){mpCountBtns[b].classList.toggle('active',parseInt(mpCountBtns[b].getAttribute('data-count'))===MP_PLAYER_COUNT);}
-highScoreEl.textContent=highScore;
-createBoard();updateHomePage();
-if(gameMode==='multiplayer')homeMPCount.classList.add('show');
-
-try{if('serviceWorker' in navigator){var swBlob=new Blob(["self.addEventListener('install', function(e) {\n    e.waitUntil(\n        caches.open('blockgame-v2').then(function(cache) {\n            return cache.addAll([\n                'index.html',\n                'manifest.json',\n                'icon-192.png',\n                'icon-512.png'\n            ]);\n        })\n    );\n});\n\nself.addEventListener('fetch', function(e) {\n    e.respondWith(\n        caches.match(e.request).then(function(r) {\n            return r || fetch(e.request);\n        })\n    );\n});\n"],{type:'application/javascript'});navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(function(e){console.log('SW failed:',e)});}}catch(e){}
-})();
-</script>
-</body>
-</html>
